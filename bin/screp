@@ -1,1 +1,69 @@
 #! /usr/bin/python
+import sys
+from optparse import OptionParser
+
+import screp
+import screp.format_parsers
+
+
+def get_formatter(options):
+    if options.csv is not None:
+        return screp.format_parsers.parse_csv_formatter(options.csv,
+                options.csv_header)
+    elif options.json is not None:
+        return screp.format_parsers.parse_json_formatter(options.json)
+    elif options.format is not None:
+        return screp.format_parsers.parse_custom_formatter(options.format)
+    else:
+        return scre.format_parsers.parse_simple_formatter()
+
+
+def screp(options, selector, in_file):
+    (formatter, substitutors) = get_formatter(options)
+
+    dom = parse_xml_data(options, in_file)
+
+    selector = screp.Selector(selector)
+
+    for element in selector.select(dom):
+        print formatter.format(*map(lambda s: s.compute_on(el, dom), substitutors))
+
+
+def parse_cli_options(argv):
+    parser = OptionParser()
+
+    parser.add_option('-v', '--verbose', dest='verbose', action='store_true',
+            default=False, help='verbose')
+    parser.add_option('-n', '--null-value', dest='null_value', action='store',
+            default='NULL', help='value to print when a value cannot be computed')
+    parser.add_option('-c', '--csv', dest='csv', action='store', default=None,
+            help='print record as csv row')
+    parser.add_option('-H', '--csv-header', dest='csv_header', action='store',
+            default=None, help='print csv header')
+    parser.add_option('-j', '--json', dest='json', action='store',
+            default=None, help='print record as json object')
+    parser.add_option('-f', '--format', dest='format', action='store',
+            default=None, help='print record as custom format')
+    parser.add_option('-U', '--base-url', dest='base_url', action='store',
+            default=None, help='base url to use when computing absolute urls')
+
+    (options, args) = parser.parse_args(argv)
+
+    if len(args) == 0:
+        parser.print_usage(sys.stderr)
+        sys.exit(1)
+
+    selector = args[0]
+
+    if len(args) == 1:
+        in_file = sys.stdin
+    else:
+        in_file = open(args[1], 'r')
+
+    return (parser, options, selector, in_file)
+
+
+if __name__ == '__main__':
+    (parser, options, selector, in_file) = parse_cli_options(sys.argv[1:])
+
+    screp(options, selector, in_file)
