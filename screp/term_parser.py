@@ -10,7 +10,7 @@ from pyparsing import (
         )
 
 from .actions import (
-        TermActionSet,
+        make_pipe,
         make_action,
         )
 
@@ -79,7 +79,7 @@ f_term = (function_0_args ^ complex_function).setResultsName('functions', listAl
 
 term << (f_term ^ nonf_term)
 
-term.setParseAction(lambda s, l, t: set_parser_results(t, TermActionSet.from_term(t.get('anchor'), list(t.get('accessors', [])), list(t.get('functions', [])))))
+term.setParseAction(lambda s, l, t: set_parser_results(t, make_pipe([t.get('anchor')] + list(t.get('accessors', [])) + list(t.get('functions', [])))))
 
 curly_term = (Literal('{').suppress() + term + Literal('}').suppress()).setResultsName('terms', listAllMatches=True).setParseAction(lambda s, l, t: t[0])
 
