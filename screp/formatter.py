@@ -25,7 +25,7 @@ class CSVFormatter(BaseFormatter):
 
         writer = csv.writer(out)
 
-        writer.writerow(values)
+        writer.writerow(map(lambda v: v.encode('utf-8'), values))
 
         line = out.getvalue()
 
