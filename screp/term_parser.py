@@ -6,6 +6,7 @@ from pyparsing import (
         Forward,
         NoMatch,
         OneOrMore,
+        ZeroOrMore,
         QuotedString,
         )
 
@@ -31,12 +32,11 @@ def any_of_keywords(kws):
     return t
 
 
-simple_accesors_kws = ['first', 'last', 'class', 'parent', 'text', 'tag']
+simple_accesors_kws = ['first', 'f', 'last', 'l', 'class', 'parent', 'p', 'text', 'tag']
 
-simple_functions_kws = ['upper', 'lower', 'trim']
+simple_functions_kws = ['upper', 'lower', 'trim', 't']
 
 anchor_kws = ['$', '@']
-
 
 digits = '0123456789'
 
@@ -52,9 +52,9 @@ quoted_string = QuotedString(quoteChar='\'', escChar='\\', escQuote='\\\'') ^\
 natural_number = Word(digits).setParseAction(lambda s, l, t: [int(t[0])])
 
 accessor_1_args = ((Keyword('children') + '(' + quoted_string + ')') ^\
-        (Keyword('desc') + '(' + quoted_string + ')') ^\
-        (Keyword('nth') + '(' + natural_number + ')') ^\
-        (Keyword('attr') + '[' + attr_identifier + ']'))
+        (any_of_keywords(['desc', 'd']) + '(' + quoted_string + ')') ^\
+        (any_of_keywords(['nth', 'n']) + '(' + natural_number + ')') ^\
+        (any_of_keywords(['attr', 'a']) + '[' + attr_identifier + ']'))
 
 accessor_1_args.setParseAction(lambda s, l, t: set_parser_results(t, make_action(t[0], [t[2]])))
 
@@ -68,18 +68,31 @@ anchor = any_of_keywords(anchor_kws).setParseAction(lambda s, l, t: set_parser_r
 
 nonf_term = anchor + Optional(accessors)
 
-term = Forward()
+func_term = Forward()
 
 complex_function = NoMatch()
 
-function_0_args = (any_of_keywords(simple_functions_kws) + '(' + term + ')').\
+function_0_args = (any_of_keywords(simple_functions_kws) + '(' + func_term + ')').\
         setParseAction(lambda s, l, t: set_parser_results(t, make_action(t[0])))
 
 f_term = (function_0_args ^ complex_function).setResultsName('functions', listAllMatches=True)
 
-term << (f_term ^ nonf_term)
+func_term << (f_term ^ nonf_term)
 
-term.setParseAction(lambda s, l, t: set_parser_results(t, make_pipe([t.get('anchor')] + list(t.get('accessors', [])) + list(t.get('functions', [])))))
+complex_filter = NoMatch()
+
+filter_0_args = any_of_keywords(simple_functions_kws).setParseAction(lambda s, l, t: set_parser_results(t, make_action(t[0])))
+
+any_filter = (filter_0_args ^ complex_filter).setResultsName('filters', listAllMatches=True)
+
+filter_unit = Literal('|').suppress() + any_filter
+
+filter_term = nonf_term + ZeroOrMore(filter_unit)
+
+term = (func_term ^ filter_term)
+
+term.setParseAction(lambda s, l, t: set_parser_results(t,
+    make_pipe([t.get('anchor')] + list(t.get('accessors', [])) + list(t.get('functions', []) + list(t.get('filters', []))))))
 
 curly_term = (Literal('{').suppress() + term + Literal('}').suppress()).setResultsName('terms', listAllMatches=True).setParseAction(lambda s, l, t: t[0])
 
@@ -89,4 +102,4 @@ if __name__ == '__main__':
 
     results = term.parseString(sys.argv[1])
 
-    print results
+    print results, results.keys(), results.get('anchor'), results.get('filters', []), results.get('functions', []), results.get('accessors')
