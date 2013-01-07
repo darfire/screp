@@ -48,6 +48,8 @@ class GenericPipeUnit(BasePipeUnit):
     def __str__(self):
         return "PipeAction<%s(%s) => %s>" % (self.name, self.in_type, self.out_type)
 
+    __repr__ = __str__
+
 
 class SelectorPipeUnit(GenericPipeUnit):
     def __init__(self, f, in_type=None, out_type=None, name=None, extras=None):
@@ -107,7 +109,7 @@ actions = [
         (('last', 'l'),     make_generic_unit(lambda s: s[-1], 'element_set', 'element')),
         (('class', 'c'),    make_generic_unit(lambda e: e.get('class'), 'element', 'string')),
         (('parent', 'p'),   make_generic_unit(lambda e: e.getparent(), 'element', 'element')),
-        (('text', 't'),     make_generic_unit(lambda e: e.text, 'element', 'string')),
+        (('text',),     make_generic_unit(lambda e: e.text, 'element', 'string')),
         (('tag',),          make_generic_unit(lambda e: e.tag, 'element', 'string')),
         (('attr', 'a'),     make_generic_unit(lambda e, a: e.get(a), 'element', 'string')),
         (('nth', 'n'),      make_generic_unit(lambda s, i: s[i], 'element_set', 'element')),
@@ -117,7 +119,7 @@ actions = [
         # functions/filters
         (('upper',),        make_generic_unit(lambda s: s.upper(), 'string', 'string')),
         (('lower',),        make_generic_unit(lambda s: s.lower(), 'string', 'string')),
-        (('trim',),         make_generic_unit(lambda s: s.strip(), 'string', 'string')),
+        (('trim', 't'),         make_generic_unit(lambda s: s.strip(), 'string', 'string')),
 
         # anchors
         (('$',),            make_generic_unit(lambda c: c.current, 'context', 'element')),
