@@ -1,32 +1,37 @@
 #! /usr/bin/python
 import sys
 from optparse import OptionParser
+import lxml.etree as etree
+from lxml.cssselect import CSSSelector
 
 import screp
 import screp.format_parsers
+from screp.context import XMLContext
 
 
 def get_formatter(options):
     if options.csv is not None:
-        return screp.format_parsers.parse_csv_formatter(options.csv,
-                options.csv_header)
-    elif options.json is not None:
-        return screp.format_parsers.parse_json_formatter(options.json)
+        return screp.format_parsers.parse_csv_formatter(options.csv)
     elif options.format is not None:
         return screp.format_parsers.parse_custom_formatter(options.format)
     else:
-        return scre.format_parsers.parse_simple_formatter()
+        return screp.format_parsers.parse_simple_formatter()
 
 
-def screp(options, selector, in_file):
+def parse_xml_data(options, data):
+    parser = etree.XMLParser(recover=True)
+    return etree.fromstring(data, parser)
+
+
+def screp_file(options, selector, data):
     (formatter, substitutors) = get_formatter(options)
 
-    dom = parse_xml_data(options, in_file)
+    dom = parse_xml_data(options, data)
 
-    selector = screp.Selector(selector)
+    sel = CSSSelector(selector)
 
-    for element in selector.select(dom):
-        print formatter.format(*map(lambda s: s.compute_on(el, dom), substitutors))
+    for element in sel(dom):
+        print formatter.format_values(map(lambda s: s.execute(XMLContext(element, dom)), substitutors)),
 
 
 def parse_cli_options(argv):
@@ -56,14 +61,15 @@ def parse_cli_options(argv):
     selector = args[0]
 
     if len(args) == 1:
-        in_file = sys.stdin
+        data = sys.stdin.read()
     else:
-        in_file = open(args[1], 'r')
+        with open(args[1], 'r') as f:
+            data = f.read()
 
-    return (parser, options, selector, in_file)
+    return (parser, options, selector, data)
 
 
 if __name__ == '__main__':
     (parser, options, selector, in_file) = parse_cli_options(sys.argv[1:])
 
-    screp(options, selector, in_file)
+    screp_file(options, selector, in_file)
