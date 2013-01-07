@@ -2,6 +2,7 @@
 import sys
 from optparse import OptionParser
 import lxml.etree as etree
+import lxml.html as html
 from lxml.cssselect import CSSSelector
 
 import screp
@@ -19,14 +20,15 @@ def get_formatter(options):
 
 
 def parse_xml_data(options, data):
-    parser = etree.XMLParser(recover=True)
+    parser = etree.HTMLParser()
     return etree.fromstring(data, parser)
 
 
 def screp_file(options, selector, data):
-    (formatter, substitutors) = get_formatter(options)
 
     dom = parse_xml_data(options, data)
+
+    (formatter, substitutors) = get_formatter(options)
 
     sel = CSSSelector(selector)
 
