@@ -41,8 +41,8 @@ def screp_file(options, selector, data):
     sel = CSSSelector(selector)
 
     for element in sel(dom):
-        context = XMLContext(element, dom)
-        print formatter.format_values(map(lambda s: compute_value(options, s, c)), substitutors)),
+        c = XMLContext(element, dom)
+        print formatter.format_values(map(lambda s: compute_value(options, s, c), substitutors)),
 
 
 def parse_cli_options(argv):
