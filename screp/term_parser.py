@@ -164,7 +164,7 @@ anchor_parser = (any_of_keywords(anchor_kws) ^ identifier_parser)
 
 anchor_parser.addParseAction(lambda s, l, t: set_parser_results(t, ParsedAnchor(t[0], l)))
 
-term_parser = anchor_parser + ZeroOrMore(accessor_parser) + ZeroOrMore(filter_parser)
+term_parser = anchor_parser + Group(ZeroOrMore(accessor_parser)) + Group(ZeroOrMore(filter_parser))
 
 term_parser.setParseAction(lambda s, l, t: set_parser_results(t, ParsedTerm(t[0], tuple(t[1]), tuple(t[2]))))
 
