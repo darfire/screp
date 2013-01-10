@@ -14,7 +14,9 @@ class TestActionParser(object):
             (' name (_arg)', ('name', ('_arg',)), ''),
             ('name()', ('name', ()), '()'),
             (' name (1,, 2, 3)', ('name', ()), ' (1,, 2, 3)'),
+            ('\tf tail', ('f', ()), ' tail'),
             ]
+
 
     non_matches = [
             (' 1name',),
@@ -184,6 +186,7 @@ class TestIdentifierParser(object):
                 ('iD', 'iD', ''),
                 (' id', 'id', ''),
                 ('i', 'i', ''),
+                ('i d', 'i', ' d'),
                 ]
 
     non_matches = [
@@ -307,15 +310,20 @@ class TestAnchorParser(object):
             (' @   tail', '@', '   tail'),
             ]
 
+    @staticmethod
+    def check_anchor(anchor, name):
+        import screp.term_parser as module
+        assert type(anchor) == module.ParsedAnchor
+        assert anchor.name == name
+
     @pytest.mark.parametrize(('string', 'match', 'tail'), TestIdentifierParser.matches + matches)
     def test_matches(self, string, match, tail):
         import screp.term_parser as module
         (ret, s, e) = module.anchor_parser.scanString(string, maxMatches=1).next()
 
-        print ret[0], ret[0].name, match
+        TestAnchorParser.check_anchor(ret[0], match)
 
-        assert type(ret[0]) == module.ParsedAnchor
-        assert ret[0].name == match and string[e:].strip() == tail.strip()
+        assert string[e:].strip() == tail.strip()
 
 
     @pytest.mark.parametrize(('string',), TestIdentifierParser.non_matches)
@@ -328,8 +336,96 @@ class TestAnchorParser(object):
 
 # term_parser tests
 class TestTermParser(object):
-    pass
-    # TODO:
+    matches = [
+            ('$.a1.a2(1, 2, 3).a3|f1|f2|f3(a, "b, c", _d)|f4 tail',
+                ('$', 
+                    [
+                        ('a1', ()),
+                        ('a2', ('1', '2', '3')),
+                        ('a3', ()),
+                        ],
+                    [
+                        ('f1', ()),
+                        ('f2', ()),
+                        ('f3', ('a', 'b, c', '_d')),
+                        ('f4', ()),
+                        ],
+                    ),
+                ' tail'),
+            ('  anchor . a (a,b,3)  |\tf tail',
+                ('anchor',
+                    [
+                        ('a', ('a', 'b', '3')),
+                        ],
+                    [
+                        ('f', ()),
+                        ],
+                    ),
+                ' tail',),
+            (' @ tail',
+                ('@',
+                    [],
+                    [],
+                    ),
+                ' tail',),
+            ('anchor .attr',
+                ('anchor',
+                    [
+                        ('attr', ()),
+                        ],
+                    [],
+                    ),
+                '',),
+            ('anchor|filter()',
+                ('anchor',
+                    [],
+                    [
+                        ('filter', ()),
+                        ],
+                    ),
+                '()',),
+            ]
+
+    non_matches = [
+            ('1id.a1.a2|f1|f2',),
+            ('&.a1.a2|f1|f2',),
+            ('.a1.a2|f1|f2',),
+            ('|f1',),
+            ]
+
+    @staticmethod
+    def check_term(term, anchor, accessors, filters):
+        import screp.term_parser as module
+        assert type(term) == module.ParsedTerm
+
+        TestAnchorParser.check_anchor(term.anchor, anchor)
+
+        assert len(term.accessors) == len(accessors)
+
+        assert len(term.filters) == len(filters)
+
+        for (a, match) in zip(term.accessors + term.filters, accessors + filters):
+            TestActionParser.check_action(a, *match)
+
+
+    @pytest.mark.parametrize(('string', 'match', 'tail'), matches)
+    def test_matches(self, string, match, tail):
+        import screp.term_parser as module
+        module.term_parser.parseWithTabs()
+        (ret, s, e) = module.term_parser.scanString(string, maxMatches=1).next()
+
+        TestTermParser.check_term(ret[0], *match)
+
+        assert string[e:].strip() == tail.strip()
+
+
+    @pytest.mark.parametrize(('string',), non_matches)
+    def test_non_matches(self, string):
+        import screp.term_parser as module
+        import pyparsing
+        with pytest.raises(pyparsing.ParseException):
+            ret = module.term_parser.parseString(string)
+
 
 
 # curly_term_parser
