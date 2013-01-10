@@ -9,6 +9,7 @@ from pyparsing import (
         ZeroOrMore,
         QuotedString,
         Group,
+        Combine,
         )
 
 from .actions import (
@@ -129,18 +130,23 @@ class ParsedTermAction(object):
 
 class ParsedAnchor(object):
     def __init__(self, name, location):
-        print name, location
         self.name = name
         self.location = location
+
+
+    def __str__(self):
+        return "ParsedAnchor<%s at %s>" % (self.name, self.location)
+
+
+    __repr__ = __str__
+
 
 digits = '0123456789'
 uppers = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 lowers = uppers.lower()
 underscore = '_'
 
-identifier_parser = Word(uppers + lowers + underscore, exact=1) + Optional(Word(uppers + lowers + digits + underscore), default='')
-
-identifier_parser.addParseAction(lambda s, l, t: set_parser_results(t, t[0] + t[1]))
+identifier_parser = Combine(Word(uppers + lowers + underscore, exact=1) + Optional(Word(uppers + lowers + digits + underscore), default=''))
 
 integer_parser = (Optional('-', default='') + Word(digits)).setParseAction(lambda s, l, t: set_parser_results(t, t[0] + t[1]))
 
