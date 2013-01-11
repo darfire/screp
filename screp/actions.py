@@ -9,8 +9,60 @@ from .context import XMLContext
 supported_types = ['element', 'element_set', 'string', 'context']
 
 
-def types_match(t1, t2):
-    return (t1 is None) or (t2 is None) or (t1 == t2)
+class BaseTermAction(object):
+    in_type = None
+    out_type = None
+
+    @staticmethod
+    def _check_types_match(t1, t2):
+        print t1, t2
+        return (t1 is None) or (t2 is None) or (t1 == t2)
+
+
+    def can_precede(self, other):
+        return BaseTermAction._check_types_match(self.out_type, other.in_type)
+
+
+    def can_follow(self, other):
+        return BaseTermAction._check_types_match(self.in_type, other.out_type)
+
+
+    def execute(self, value):
+        pass
+
+
+class Term(object):
+    def __init__(self, actions=None):
+        if actions is None:
+            actions = []
+
+        self._actions = []
+
+        for a in actions:
+            self.add_action(a)
+
+
+    def add_action(self, action):
+        if len(self._actions) > 0:
+            if not action.can_follow(self.last_action):
+                raise TypeError('%s cannot follow %s: expects type %s, receives %s'\
+                        % (action, self.last_action, action.in_type, self.last_action.out_type))
+        self._actions.append(action)
+
+
+    @property
+    def last_action(self):
+        return self._actions[-1]
+
+
+    def execute(self, value):
+        if len(self._actions) == 0:
+            raise ValueError("No actions defined")
+
+        for a in self._actions:
+            value = a.execute(value)
+
+        return value
 
 
 class BasePipeUnit(object):
