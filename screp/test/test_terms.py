@@ -33,7 +33,7 @@ class TestTermAction(object):
         assert action.execute(value) == 'result'
 
 
-    def test_execute_throws_exception(self):
+    def test_execute_raises_exception(self):
         class BogusException(Exception):
             pass
 
@@ -128,7 +128,7 @@ class TestTerm(object):
         assert term.execute('value1') == 'value2value3'
 
 
-    def test_execute_throws_exception(self):
+    def test_execute_raises_exception(self):
         class BogusException(Exception):
             pass
 
@@ -174,3 +174,57 @@ class TestTerm(object):
     def test_last_action(self):
         # TODO:
         pass
+
+
+class TestGenericTermAction(object):
+
+    def test_creation(self):
+        pass
+
+    
+    def test_execute(self):
+        pass
+
+
+    def test_initialization(self):
+        pass
+
+
+    def test_execute_raises_exception(self):
+        pass
+
+
+class TestSelectorTermAction(object):
+
+    def test_initialization(self):
+        pass
+
+
+    def test_erroneous_selector(self):
+        pass
+
+
+class TestAnchorTermAction(object):
+
+    def test_get_anchor(self):
+        pass
+
+
+    def test_get_anchor_raises(self):
+        pass
+
+
+class Test_make_action_of_class(object):
+    # TODO
+    pass
+
+
+class Test_make_action(object):
+    # TODO
+    pass
+
+
+class Test_make_term(object):
+    # TODO
+    pass
+    pass

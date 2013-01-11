@@ -1,8 +1,25 @@
 import pytest
 import lxml.etree as etree
+from lxml.cssselect import CSSSelector
 
 def el(string):
     return etree.fromstring(string)
+
+
+def generate_parent_success_cases(cases):
+    def process(elstr, elsel, parsel):
+        root = el(elstr)
+
+        kid = CSSSelector(elsel)(root)[0]
+
+        if parsel is not None:
+            parent = CSSSelector(parsel)(root)[0]
+        else:
+            parent = None
+
+        return (kid, (), parent)
+
+    return map(lambda x: process(*x), cases)
 
 scenarios = [
         {
@@ -186,6 +203,34 @@ scenarios = [
                 ([el('<div id="id"/>'), el('<p id="id"/>')], (), Exception),
                 ],
             'creation_failure_cases': [],
+            },
+        {
+            # parent
+            'names': ('parent', 'p'),
+            'success_cases': generate_parent_success_cases([
+                ('<div class="c1"><p>text</p></div>', 'p', '.c1'),
+                ('<div class="c1"><div class="c2"/></div>', '.c2', '.c1'),
+                ('<t1><t2/></t1>', 't2', 't1'),
+                ('<t1><t2/></t1>', 't1', None),
+                ]),
+            'execution_failure_cases': [
+                (el('<div/>'), (1,), TypeError),
+                (el('<div/>'), ([1, 2, 3],), TypeError),
+                (1, ('attr',), TypeError),
+                ('123', ('attr',), TypeError),
+                ([el('<div id="id"/>'), el('<p id="id"/>')], (), Exception),
+                ],
+            'creation_failure_cases': [],
+            },
+        {
+            # desc
+            'names': ('desc', 'd'),
+            # TODO
+            },
+        {
+            # fdesc
+            'names': ('fdesc', 'fd'),
+            # TODO
             },
         ]
 
