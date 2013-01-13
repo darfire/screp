@@ -10,7 +10,7 @@ from setuptools import setup
 
 
 PROJECT = u'screp'
-VERSION = '0.1'
+VERSION = '0.2'
 URL = ''
 AUTHOR = u'Doru Arfire'
 AUTHOR_EMAIL = u'doruarfire@gmail.com'
@@ -34,13 +34,16 @@ setup(
     license=read_file('LICENSE'),
     namespace_packages=[],
     packages=[u'screp'],
-    package_dir = {'': os.path.dirname(__file__)},
+#    package_dir = {'': os.path.dirname(__file__)},
     include_package_data=True,
     zip_safe=False,
     install_requires=[
         # -*- Requirements -*-
     ],
     entry_points = {
+        'console_scripts': [
+            'screp=screp.main:main',
+            ],
         # -*- Entry points -*-
     },
     classifiers=[
