@@ -112,6 +112,10 @@ term_parser.setParseAction(lambda s, l, t: set_parser_results(t, ParsedTerm(t[0]
 curly_term_parser = Literal('{').suppress() + term_parser + Literal('}').suppress()
 
 
+def parse_term(string):
+    return term_parser.parseString(string, parseAll=True)[0]
+
+
 if __name__ == '__main__':
     import sys
 
