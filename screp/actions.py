@@ -1,7 +1,10 @@
 import types
 import lxml
-import lxml.etree
-from lxml.cssselect import CSSSelector
+from lxml.etree import XPath
+from lxml.cssselect import (
+        CSSSelector,
+        css_to_xpath,
+        )
 
 from .context import XMLContext
 
@@ -15,7 +18,6 @@ class BaseTermAction(object):
 
     @staticmethod
     def _check_types_match(t1, t2):
-        print t1, t2
         return (t1 is None) or (t2 is None) or (t1 == t2)
 
 
@@ -29,6 +31,75 @@ class BaseTermAction(object):
 
     def execute(self, value):
         pass
+
+
+class GenericTermAction(BaseTermAction):
+    def __init__(self, f, in_type=None, out_type=None, args=None, identification=None):
+        self._f = f
+        self._id = identification
+        self.in_type = in_type
+        self.out_type = out_type
+        if args is None:
+            args = []
+        self._args = args
+
+
+    def execute(self, value):
+        return self._f(value, *self._args)
+
+
+class SelectorTermAction(GenericTermAction):
+    def __init__(self, f, in_type=None, out_type=None, identification=None, args=None):
+        super(SelectorTermAction, self).__init__(f, in_type=in_type, out_type=out_type, identification=identification, args=args)
+
+        self._selector = CSSSelector(self._args[0])
+
+        del self._args[0]
+
+
+    def execute(self, value):
+        return self._f(value, self._selector, *self._args)
+
+
+class AxisSelectorTermAction(GenericTermAction):
+    def __init__(self, f, axis, in_type=None, out_type=None, identification=None, args=None):
+        super(AxisSelectorTermAction, self).__init__(f, in_type=in_type, out_type=out_type, identification=identification, args=args)
+
+        self._selector = XPath(css_to_xpath(self._args[0], prefix=axis))
+
+        del self._args[0]
+
+
+    def execute(self, value):
+        return self._f(value, self._selector, *self._args)
+
+
+class SiblingTermAction(GenericTermAction):
+    in_type = 'element'
+    out_type = 'element_set'
+
+    def __init__(self, selector, identification):
+        self._id = identification
+
+        self._preceding_sel = XPath(css_to_xpath(selector, prefix="preceding-sibling::"))
+        self._following_sel = XPath(css_to_xpath(selector, prefix="following-sibling::"))
+
+
+    def execute(self, value):
+        return self._preceding_sel(value) + self._following_sel(value)
+
+
+class AnchorTermAction(BaseTermAction):
+    in_type = 'context'
+    out_type = 'element'
+
+    def __init__(self, anchor):
+        self._anchor = anchor
+
+
+    def execute(self, value):
+        # value must be a context
+        return value.get_anchor(self._anchor)
 
 
 class Term(object):
@@ -65,117 +136,83 @@ class Term(object):
         return value
 
 
-class BasePipeUnit(object):
-    in_type = None
-    out_type = None
-
-
-    def can_follow(self, other):
-        return types_match(other.out_type, self.in_type)
-
-
-    def can_precede(self, other):
-        return types_match(self.out_type, other.in_type)
-
-
-    def execute(self, value, *extras):
-        pass
-
-
-class GenericPipeUnit(BasePipeUnit):
-    def __init__(self, f, in_type=None, out_type=None, name=None, extras=None):
-        self.name = name
-        self.f = f
-        self.in_type = in_type
-        self.out_type = out_type
-        if extras is None:
-            extras = []
-        self.extras = extras
-
-
-    def execute(self, value):
-        return self.f(value, *self.extras)
-
-
-    def __str__(self):
-        return "PipeAction<%s(%s) => %s>" % (self.name, self.in_type, self.out_type)
-
-    __repr__ = __str__
-
-
-class SelectorPipeUnit(GenericPipeUnit):
-    def __init__(self, f, in_type=None, out_type=None, name=None, extras=None):
-        super(SelectorPipeUnit, self).__init__(f, in_type=in_type, out_type=out_type, name=name, extras=extras)
-
-        self.selector = CSSSelector(self.extras[0])
-        del self.extras[0]
-
-
-    def execute(self, value):
-        return self.f(value, self.selector, *self.extras)
-
-
-class Pipe(object):
-    def __init__(self, initial_action=None):
-        self._actions = []
-        if initial_action is not None:
-            self._actions.append(initial_action)
-
-
-    def append_action(self, action):
+    @property
+    def out_type(self):
         if len(self._actions) == 0:
-            self._actions.append(action)
+            return None
         else:
-            last = self._actions[-1]
-            if not last.can_precede(action):
-                raise TypeError("Action %s cannot follow action %s (especting type '%s', got '%s')" %\
-                        (action, last, action.in_type, last.out_type))
-            self._actions.append(action)
+            return self.last_action.out_type
 
 
-    def execute(self, value):
-        for a in self._actions:
-            value = a.execute(value)
+class Anchor(object):
+    def __init__(self, name, term):
+        self.name = name
+        self.term = term
 
-        return value
+
+    def execute(self, context):
+        return self.term.execute(context)
 
 
-def make_unit_of_class(cls, f, in_type, out_type):
-    def builder(name, extras):
-        return cls(f, in_type=in_type, out_type=out_type, name=name, extras=extras)
+def make_action_of_class(cls, f, in_type, out_type):
+    def builder(identification, args):
+        return cls(f, in_type=in_type, out_type=out_type, identification=identification, args=args)
 
     return builder
 
 
-def make_generic_unit(f, in_type, out_type):
-    return make_unit_of_class(GenericPipeUnit, f, in_type, out_type)
+def make_generic_action(f, in_type, out_type):
+    return make_action_of_class(GenericTermAction, f, in_type, out_type)
 
 
-def make_selector_unit(f, in_type, out_type):
-    return make_unit_of_class(SelectorPipeUnit, f, in_type, out_type)
+def make_selector_action(f, in_type, out_type):
+    return make_action_of_class(SelectorTermAction, f, in_type, out_type)
+
+
+def make_x_selector_action(f, axis, in_type, out_type):
+    def builder(identification, args):
+        return AxisSelectorTermAction(f, axis, in_type=in_type, out_type=out_type, identification=identification, args=args)
+
+    return builder
+
+
+def make_siblings_action():
+    def builder(identification, args):
+        (selector,) = args
+        return SiblingTermAction(selector, identification)
+
+
+def match_selector(elset, selector):
+    return sum(map(selector, elset), [])
 
 
 actions = [
         # accessors
-        (('first', 'f'),    make_generic_unit(lambda s: s[0], 'element_set', 'element')),
-        (('last', 'l'),     make_generic_unit(lambda s: s[-1], 'element_set', 'element')),
-        (('class', 'c'),    make_generic_unit(lambda e: e.get('class'), 'element', 'string')),
-        (('parent', 'p'),   make_generic_unit(lambda e: e.getparent(), 'element', 'element')),
-        (('text',),     make_generic_unit(lambda e: e.text, 'element', 'string')),
-        (('tag',),          make_generic_unit(lambda e: e.tag, 'element', 'string')),
-        (('attr', 'a'),     make_generic_unit(lambda e, a: e.get(a), 'element', 'string')),
-        (('nth', 'n'),      make_generic_unit(lambda s, i: s[i], 'element_set', 'element')),
-        (('desc', 'd'),     make_selector_unit(lambda e, sel: sel(e), 'element', 'element_set')),
-        (('first-desc', 'fd'),  make_selector_unit(lambda e, sel: sel(e)[0], 'element', 'element')),
+        (('first', 'f'),            make_generic_action(lambda s: s[0], 'element_set', 'element')),
+        (('last', 'l'),             make_generic_action(lambda s: s[-1], 'element_set', 'element')),
+        (('class',),                make_generic_action(lambda e: e.get('class'), 'element', 'string')),
+        (('id',),                   make_generic_action(lambda e: e.get('id'), 'element', 'string')),
+        (('parent', 'p'),           make_generic_action(lambda e: e.getparent(), 'element', 'element')),
+        (('text',),                 make_generic_action(lambda e: e.text, 'element', 'string')),
+        (('tag',),                  make_generic_action(lambda e: e.tag, 'element', 'string')),
+        (('attr', 'a'),             make_generic_action(lambda e, a: e.get(a), 'element', 'string')),
+        (('nth', 'n'),              make_generic_action(lambda s, i: s[i], 'element_set', 'element')),
+        (('desc', 'd'),             make_selector_action(lambda e, sel: sel(e), 'element', 'element_set')),
+        (('first-desc', 'fd'),      make_selector_action(lambda e, sel: sel(e)[0], 'element', 'element')),
+        (('ancestors', 'ancs'),     make_x_selector_action(lambda e, sel: sel(e), 'ancestor::', 'element', 'element_set')),
+        (('children', 'kids'),      make_x_selector_action(lambda e, sel: sel(e), 'child::', 'element', 'element_set')),
+        (('fsiblings', 'fsibs'),    make_x_selector_action(lambda e, sel: sel(e), 'following-sibling::', 'element', 'element_set')),
+        (('psiblings', 'psibs'),    make_x_selector_action(lambda e, sel: sel(e), 'preceding-sibling::', 'element', 'element_set')),
+        (('siblings', 'sibs'),      make_siblings_action),
+        (('matching', 'm'),         make_x_selector_action(match_selector, 'self::', 'element_set', 'element_set')),
+
 
         # functions/filters
-        (('upper',),        make_generic_unit(lambda s: s.upper(), 'string', 'string')),
-        (('lower',),        make_generic_unit(lambda s: s.lower(), 'string', 'string')),
-        (('trim', 't'),         make_generic_unit(lambda s: s.strip(), 'string', 'string')),
-
-        # anchors
-        (('$',),            make_generic_unit(lambda c: c.current, 'context', 'element')),
-        (('@',),            make_generic_unit(lambda c: c.root, 'context', 'element')),
+        (('upper',),                make_generic_action(lambda s: s.upper(), 'string', 'string')),
+        (('lower',),                make_generic_action(lambda s: s.lower(), 'string', 'string')),
+        (('trim', 't'),             make_generic_action(lambda s: s.strip(), 'string', 'string')),
+        (('strip',),                make_generic_action(lambda s, chars: s.strip(chars), 'string', 'string')),
+        (('replace',),              make_generic_action(lambda s, old, new: s.replace(old, new), 'string', 'string')),
         ]
 
 
@@ -188,16 +225,22 @@ def multiply_keys(lst):
 actions_dir = dict(multiply_keys(actions))
 
 
-def make_action(action_name, extras=None):
-    if extras is None:
-        extras = []
-    return actions_dir[action_name](action_name, extras)
+def make_action(parsed_action):
+    try:
+        return actions_dir[parsed_action.name](parsed_action.name, parsed_action.args)
+    except KeyError:
+        raise KeyError('Unknown action %s' % (parsed_action.location,))
 
 
-def make_pipe(actions):
-    pipe = Pipe()
+def make_term(pterm):
+    actions = [AnchorTermAction(pterm.anchor.name)] + map(lambda ta: make_action(ta), pterm.accessors + pterm.filters)
+    return Term(actions)
 
-    for a in actions:
-        pipe.append_action(a)
 
-    return pipe
+def make_anchor(name, pterm):
+    term = make_term(pterm)
+
+    if term.out_type != 'element':
+        raise ValueError("Anchor definition '%s' has out type '%s' instead of 'element'!" % (name, term.out_type))
+    
+    return Anchor(name, term)
