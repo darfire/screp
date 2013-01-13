@@ -16,6 +16,11 @@ AUTHOR = u'Doru Arfire'
 AUTHOR_EMAIL = u'doruarfire@gmail.com'
 DESC = "A short description..."
 
+requires = [
+        'pyparsing',
+        'lxml',
+        ]
+
 def read_file(file_name):
     file_path = os.path.join(
         os.path.dirname(__file__),
@@ -37,9 +42,7 @@ setup(
 #    package_dir = {'': os.path.dirname(__file__)},
     include_package_data=True,
     zip_safe=False,
-    install_requires=[
-        # -*- Requirements -*-
-    ],
+    install_requires=requires,
     entry_points = {
         'console_scripts': [
             'screp=screp.main:main',
