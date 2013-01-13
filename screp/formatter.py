@@ -3,9 +3,16 @@ import StringIO
 
 
 class BaseFormatter(object):
+    def start_format(self):
+        return ''
 
-    def format_values(self, strings):
+
+    def format_record(self, record):
         pass
+
+
+    def end_format(self):
+        return ''
 
 
 class CSVFormatter(BaseFormatter):
