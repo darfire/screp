@@ -186,16 +186,33 @@ def match_selector(elset, selector):
     return sum(map(selector, elset), [])
 
 
+def get_attr(element, attr):
+    v = element.get(attr)
+    if v is None:
+        raise KeyError("Element doesn't have attribute '%s'" % (attr,))
+    else:
+        return v
+
+
+def get_parent(element):
+    parent = element.getparent()
+
+    if parent is None:
+        raise ValueError("Could not get parent: element is root")
+    else:
+        return parent
+
+
 actions = [
         # accessors
         (('first', 'f'),            make_generic_action(lambda s: s[0], 'element_set', 'element')),
         (('last', 'l'),             make_generic_action(lambda s: s[-1], 'element_set', 'element')),
-        (('class',),                make_generic_action(lambda e: e.get('class'), 'element', 'string')),
-        (('id',),                   make_generic_action(lambda e: e.get('id'), 'element', 'string')),
-        (('parent', 'p'),           make_generic_action(lambda e: e.getparent(), 'element', 'element')),
+        (('class',),                make_generic_action(lambda e: get_attr(e, 'class'), 'element', 'string')),
+        (('id',),                   make_generic_action(lambda e: get_attr(e, 'id'), 'element', 'string')),
+        (('parent', 'p'),           make_generic_action(lambda e: get_parent(e), 'element', 'element')),
         (('text',),                 make_generic_action(lambda e: e.text, 'element', 'string')),
         (('tag',),                  make_generic_action(lambda e: e.tag, 'element', 'string')),
-        (('attr', 'a'),             make_generic_action(lambda e, a: e.get(a), 'element', 'string')),
+        (('attr', 'a'),             make_generic_action(lambda e, a: get_attr(e, a), 'element', 'string')),
         (('nth', 'n'),              make_generic_action(lambda s, i: s[i], 'element_set', 'element')),
         (('desc', 'd'),             make_selector_action(lambda e, sel: sel(e), 'element', 'element_set')),
         (('first-desc', 'fd'),      make_selector_action(lambda e, sel: sel(e)[0], 'element', 'element')),
