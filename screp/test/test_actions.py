@@ -127,14 +127,14 @@ scenarios = [
             'names': ('class',),
             'success_cases': [
                 (el('<div class="C1" a1="1"></div>'), (), 'C1'),
-                (el('<tag class_="cls"></tag>'), (), None),
-                (el('<p>text</p>'), (), None),
                 ],
             'execution_failure_cases': [
                 (el('<div/>'), (1,), TypeError),
                 (1, (), AttributeError),
                 ('123', (), AttributeError),
                 ([el('<div class="cls"/>'), el('<p class="cls"/>')], (), AttributeError),
+                (el('<tag class_="cls"></tag>'), (), KeyError),
+                (el('<p>text</p>'), (), KeyError),
                 ],
             'creation_failure_cases': []
             },
@@ -143,14 +143,14 @@ scenarios = [
             'names': ('id',),
             'success_cases': [
                 (el('<div id="I1" a1="1"></div>'), (), 'I1'),
-                (el('<tag id_="id"></tag>'), (), None),
-                (el('<p>text</p>'), (), None),
                 ],
             'execution_failure_cases': [
                 (el('<div/>'), (1,), TypeError),
                 (1, (), AttributeError),
                 ('123', (), AttributeError),
                 ([el('<div id="id"/>'), el('<p id="id"/>')], (), AttributeError),
+                (el('<tag id_="id"></tag>'), (), KeyError),
+                (el('<p>text</p>'), (), KeyError),
                 ],
             'creation_failure_cases': []
             },
@@ -193,7 +193,6 @@ scenarios = [
             'success_cases': [
                 (el('<tag attr="v1" class="c1"/>'), ('attr',), 'v1'),
                 (el('<tag a1="v1" a2="va lue">text</tag>'), ('a2',), 'va lue'),
-                (el('<tag a1="v1"/>'), ('a2',), None),
                 ],
             'execution_failure_cases': [
                 (el('<div/>'), (1,), TypeError),
@@ -201,6 +200,7 @@ scenarios = [
                 (1, ('attr',), AttributeError),
                 ('123', ('attr',), AttributeError),
                 ([el('<div id="id"/>'), el('<p id="id"/>')], (), Exception),
+                (el('<tag a1="v1"/>'), ('a2',), KeyError),
                 ],
             'creation_failure_cases': [],
             },
@@ -211,7 +211,6 @@ scenarios = [
                 ('<div class="c1"><p>text</p></div>', 'p', '.c1'),
                 ('<div class="c1"><div class="c2"/></div>', '.c2', '.c1'),
                 ('<t1><t2/></t1>', 't2', 't1'),
-                ('<t1><t2/></t1>', 't1', None),
                 ]),
             'execution_failure_cases': [
                 (el('<div/>'), (1,), TypeError),
@@ -219,6 +218,7 @@ scenarios = [
                 (1, ('attr',), TypeError),
                 ('123', ('attr',), TypeError),
                 ([el('<div id="id"/>'), el('<p id="id"/>')], (), Exception),
+                (el('<t1><t2/></t1>'), (), Exception),
                 ],
             'creation_failure_cases': [],
             },
