@@ -232,15 +232,15 @@ def make_action(parsed_action):
         raise KeyError('Unknown action %s' % (parsed_action.location,))
 
 
-def make_term(pterm):
+def make_term(pterm, required_out_type=None):
     actions = [AnchorTermAction(pterm.anchor.name)] + map(lambda ta: make_action(ta), pterm.accessors + pterm.filters)
+    if required_out_type is not None:
+        if len(actions) == 0 or actions[-1].out_type != required_out_type:
+            raise ValueError("Term must have out_type '%s', has '%s'!" % (required_out_type, actions[-1].out_type))
     return Term(actions)
 
 
 def make_anchor(name, pterm):
-    term = make_term(pterm)
+    term = make_term(pterm, required_out_type='element')
 
-    if term.out_type != 'element':
-        raise ValueError("Anchor definition '%s' has out type '%s' instead of 'element'!" % (name, term.out_type))
-    
     return Anchor(name, term)

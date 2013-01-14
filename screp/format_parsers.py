@@ -17,7 +17,7 @@ csv_format_parser = curly_term_parser + ZeroOrMore(comma + curly_term_parser) + 
 def parse_csv_formatter(value, header=None):
     result = csv_format_parser.parseString(value)
 
-    terms = map(make_term, result)
+    terms = map(lambda pterm: make_term(pterm, required_out_type='string'), result)
 
     return (CSVFormatter(len(terms), header=header), terms)
 
