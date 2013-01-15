@@ -227,7 +227,7 @@ actions = [
         (('attr', 'a'),             make_generic_action(lambda e, a: get_attr(e, a), 'element', 'string')),
         (('nth', 'n'),              make_generic_action(lambda s, i: s[i], 'element_set', 'element')),
         (('desc', 'd'),             make_selector_action(lambda e, sel: sel(e), 'element', 'element_set')),
-        (('first-desc', 'fd'),      make_selector_action(lambda e, sel: sel(e)[0], 'element', 'element')),
+        (('fdesc', 'fd'),           make_selector_action(lambda e, sel: sel(e)[0], 'element', 'element')),
         (('ancestors', 'ancs'),     make_x_selector_action(lambda e, sel: sel(e), 'ancestor::', 'element', 'element_set')),
         (('children', 'kids'),      make_x_selector_action(lambda e, sel: sel(e), 'child::', 'element', 'element_set')),
         (('fsiblings', 'fsibs'),    make_x_selector_action(lambda e, sel: sel(e), 'following-sibling::', 'element', 'element_set')),

@@ -107,7 +107,7 @@ The following accessors are predefined:
   attribute with name 'attr_name'
 * **desc(css_sel)** [in_type='element', out_type='element_set']: returns the ordered list of
   descendants of the current element selected by the CSS selector specified by 'css_sel'
-* **first-desc(css_sel)** [in_type='element', out_type='element']: equivalent to
+* **fdesc(css_sel)** [in_type='element', out_type='element']: equivalent to
   .desc(css_sel).first
 * **ancestors(css_sel)** [in_type='element', out_type='element_set']: returns the list of ancestors
   of the current element that satisfy the CSS selector specified by 'css_sel'
