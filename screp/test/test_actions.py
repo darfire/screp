@@ -21,6 +21,44 @@ def generate_parent_success_cases(cases):
 
     return map(lambda x: process(*x), cases)
 
+
+def generate_list_success_cases(cases):
+    def process(data, elsel, args, map_f, out_value):
+        root = el(data)
+        anchor = CSSSelector(elsel)(root)[0]
+
+        def predicate(in_value):
+            return map(map_f, in_value) == out_value
+
+        return (anchor, args, predicate)
+
+    return map(lambda x: process(*x), cases)
+
+
+selector_actions_creation_failure_cases = [
+        # (parameters, exception_class_raised)
+        ((), Exception),
+        ((1,), Exception),
+        (([1, 2, 3],), Exception),
+        (('$myclass',), Exception),
+        ((1, '.class'), Exception),
+        ]
+
+invalid_element_valid_selector = [
+        # (element, parameters, exception_class_raised)
+        # invalid elements, valid selectors
+        (1, ('.class',), Exception),
+        ([1, 2, 3], ('tag, .class',), Exception),
+        ([el('<div/>'), el('<span><p>text</p></span>')], ('[attr]',), Exception),
+        ]
+
+valid_element_valid_selector_too_many_args = [
+        # valid selectors
+        (el('<div><p class="c1">text</p></div>'), ('.c1', 1), TypeError),
+        ]
+
+selector_actions_execution_failure_cases = invalid_element_valid_selector + valid_element_valid_selector_too_many_args
+
 scenarios = [
         {
             # first
@@ -127,14 +165,14 @@ scenarios = [
             'names': ('class',),
             'success_cases': [
                 (el('<div class="C1" a1="1"></div>'), (), 'C1'),
-                (el('<tag class_="cls"></tag>'), (), None),
-                (el('<p>text</p>'), (), None),
                 ],
             'execution_failure_cases': [
                 (el('<div/>'), (1,), TypeError),
                 (1, (), AttributeError),
                 ('123', (), AttributeError),
                 ([el('<div class="cls"/>'), el('<p class="cls"/>')], (), AttributeError),
+                (el('<tag class_="cls"></tag>'), (), KeyError),
+                (el('<p>text</p>'), (), KeyError),
                 ],
             'creation_failure_cases': []
             },
@@ -143,14 +181,14 @@ scenarios = [
             'names': ('id',),
             'success_cases': [
                 (el('<div id="I1" a1="1"></div>'), (), 'I1'),
-                (el('<tag id_="id"></tag>'), (), None),
-                (el('<p>text</p>'), (), None),
                 ],
             'execution_failure_cases': [
                 (el('<div/>'), (1,), TypeError),
                 (1, (), AttributeError),
                 ('123', (), AttributeError),
                 ([el('<div id="id"/>'), el('<p id="id"/>')], (), AttributeError),
+                (el('<tag id_="id"></tag>'), (), KeyError),
+                (el('<p>text</p>'), (), KeyError),
                 ],
             'creation_failure_cases': []
             },
@@ -193,7 +231,6 @@ scenarios = [
             'success_cases': [
                 (el('<tag attr="v1" class="c1"/>'), ('attr',), 'v1'),
                 (el('<tag a1="v1" a2="va lue">text</tag>'), ('a2',), 'va lue'),
-                (el('<tag a1="v1"/>'), ('a2',), None),
                 ],
             'execution_failure_cases': [
                 (el('<div/>'), (1,), TypeError),
@@ -201,6 +238,7 @@ scenarios = [
                 (1, ('attr',), AttributeError),
                 ('123', ('attr',), AttributeError),
                 ([el('<div id="id"/>'), el('<p id="id"/>')], (), Exception),
+                (el('<tag a1="v1"/>'), ('a2',), KeyError),
                 ],
             'creation_failure_cases': [],
             },
@@ -211,7 +249,6 @@ scenarios = [
                 ('<div class="c1"><p>text</p></div>', 'p', '.c1'),
                 ('<div class="c1"><div class="c2"/></div>', '.c2', '.c1'),
                 ('<t1><t2/></t1>', 't2', 't1'),
-                ('<t1><t2/></t1>', 't1', None),
                 ]),
             'execution_failure_cases': [
                 (el('<div/>'), (1,), TypeError),
@@ -219,17 +256,318 @@ scenarios = [
                 (1, ('attr',), TypeError),
                 ('123', ('attr',), TypeError),
                 ([el('<div id="id"/>'), el('<p id="id"/>')], (), Exception),
+                (el('<t1><t2/></t1>'), (), Exception),
                 ],
             'creation_failure_cases': [],
             },
         {
             # desc
             'names': ('desc', 'd'),
-            # TODO
+            'success_cases': generate_list_success_cases([
+                # tuples of (HTML data, selector for anchor, action arguments, 
+                # mapper over result, value that the result of mapping must match)
+                ('<div a1=""><div><p class="c1" id="p"/><a href="" id="a">text</a></div></div>',
+                    '[a1]',
+                    ('a, .c1',),
+                    lambda e: e.get('id'),
+                    ['p', 'a']),
+                ("""
+                <div>
+                    <tag t="">
+                    <p id="p1">
+                        <p id="p2">
+                            <a>
+                                <p id="p3">
+                                </p>
+                            </a>
+                        </p>
+                    </p>
+                    </tag>
+                </div>
+                """,
+                    '[t]',
+                    ('p',),
+                    lambda e: e.get('id'),
+                    ['p1', 'p2', 'p3']),
+                ("""
+                <t1>
+                    <t2>
+                    </t2>
+                </t1>
+                """, 
+                    't1',
+                    ('p',),
+                    lambda e: e.get('id'),
+                    []),
+                ]),
+            'execution_failure_cases': selector_actions_execution_failure_cases,
+            'creation_failure_cases': selector_actions_creation_failure_cases,
             },
         {
             # fdesc
             'names': ('fdesc', 'fd'),
+            # TODO
+            'execution_failure_cases': selector_actions_execution_failure_cases,
+            'creation_failure_cases': selector_actions_creation_failure_cases,
+            },
+        {
+            # ancestors
+            'names': ('ancestors', 'ancs'),
+            'success_cases': generate_list_success_cases([
+                (
+                    """
+                    <t1 class="c1">
+                        <t2 class="c2">
+                            <t3 class="c1">
+                                <t4>
+                                </t4>
+                            </t3>
+                        </t2>
+                    </t1>
+                    """,
+                    't4',
+                    ('.c1',),
+                    lambda e: e.tag,
+                    ['t1', 't3'],
+                    ),
+                (
+                    """
+                    <t1 class="c1">
+                        <t2 class="c2">
+                            <t3/>
+                        </t2>
+                    </t1>
+                    """,
+                    't3',
+                    ('',),
+                    lambda e: e.tag,
+                    ['t1', 't2'],
+                    ),
+                (
+                    """
+                    <t1 class="c1">
+                        <t2>
+                            <t3/>
+                        </t2>
+                    </t1>
+                    """,
+                    't3',
+                    ('.c2',),
+                    lambda e: e.tag,
+                    [],
+                    ),
+                ]),
+            'execution_failure_cases': selector_actions_execution_failure_cases,
+            'creation_failure_cases': selector_actions_creation_failure_cases,
+            },
+        {
+            # children
+            'names': ('children', 'kids'),
+            'success_cases': generate_list_success_cases([
+                (
+                    """
+                    <t1>
+                        <t2>
+                            <t3 class="c1"/>
+                            <t4 class="c2">
+                                <t6 class="c1">
+                                </t6>
+                            </t4>
+                            <t5 class="c1"/>
+                        </t2>
+                    </t1>
+                    """,
+                    't2',
+                    ('.c1',),
+                    lambda e: e.tag,
+                    ['t3', 't5'],
+                    ),
+                (
+                    """
+                    <t1 class="c1">
+                    </t1>
+                    """,
+                    't1',
+                    ('.c1',),
+                    lambda e: e.tag,
+                    [],
+                    ),
+                (
+                    """
+                    <t1>
+                        <t2 class="c2"/>
+                        <t3 class="c3"/>
+                    </t1>
+                    """,
+                    't1',
+                    ('.c1',),
+                    lambda e: e.tag,
+                    [],
+                    ),
+                (
+                    """
+                    <t1>
+                        <t2 class="c2"/>
+                        <t3 class="c3"/>
+                    </t1>
+                    """,
+                    't1',
+                    ('',),
+                    lambda e: e.tag,
+                    ['t2', 't3'],
+                    ),
+                ]),
+            'execution_failure_cases': selector_actions_execution_failure_cases,
+            'creation_failure_cases': selector_actions_creation_failure_cases,
+            },
+        {
+            # siblings
+            'names': ('siblings', 'sibs'),
+            'success_cases': generate_list_success_cases([
+                (
+                    """
+                    <t1>
+                        <t2 class="c1">
+                            <t3 class="c1">
+                            </t3>
+                        </t2>
+                        <t4 class="c1">
+                            <t7 class="c1">
+                            </t7>
+                        </t4>
+                        <t5>
+                        </t5>
+                        <t6 class="c1">
+                            <t8 class="c1">
+                            </t8>
+                        </t6>
+                    </t1>
+                    """,
+                    't4',
+                    ('.c1',),
+                    lambda e: e.tag,
+                    ['t2', 't6'],
+                    ),
+                (
+                    """
+                    <t1>
+                        <t2 class="c1"/>
+                        <t3 class="c2"/>
+                        <t4 class="c3"/>
+                    </t1>
+                    """,
+                    't3',
+                    ('.c2',),
+                    lambda e: e.tag,
+                    [],
+                    ),
+                (
+                    """
+                    <t1>
+                        <t2 class="c1"/>
+                        <t3 class="c2"/>
+                        <t4 class="c3"/>
+                    </t1>
+                    """,
+                    't3',
+                    ('',),
+                    lambda e: e.tag,
+                    ['t2', 't4'],
+                    ),
+                ]),
+            'execution_failure_cases': selector_actions_execution_failure_cases,
+            'creation_failure_cases': selector_actions_creation_failure_cases,
+            },
+        {
+            # psiblings
+            'names': ('psiblings', 'psibs'),
+            'success_cases': generate_list_success_cases([
+                (
+                    """
+                    <t1>
+                        <t2 class="c1"/>
+                        <t3 class="c2">
+                            <t9 class="c1"/>
+                        </t3>
+                        <t4 class="c1">
+                            <t10 class="c1"/>
+                        </t4>
+                        <t5>
+                            <t8 class="c1"/>
+                        </t5>
+                        <t6 class="c1"/>
+                        <t7 class="c1"/>
+                    </t1>
+                    """,
+                    't5',
+                    ('.c1',),
+                    lambda e: e.tag,
+                    ['t2', 't4'],
+                    ),
+                (
+                    """
+                    <t1>
+                        <t2/>
+                        <t3 class="c1"/>
+                    </t1>
+                    """,
+                    't2',
+                    ('.c1',),
+                    lambda e: e.tag,
+                    [],
+                    ),
+                ]),
+            'execution_failure_cases': selector_actions_execution_failure_cases,
+            'creation_failure_cases': selector_actions_creation_failure_cases,
+            },
+        {
+            # fsiblings
+            'names': ('fsiblings', 'fsibs'),
+            'success_cases': generate_list_success_cases([
+                (
+                    """
+                    <t1>
+                        <t2 class="c1"/>
+                        <t3 class="c2"/>
+                        <t4 class="c1">
+                            <t10 class="c1"/>
+                        </t4>
+                        <t5>
+                            <t9 class="c1"/>
+                        </t5>
+                        <t6 class="c1">
+                            <t11 class="c1"/>
+                        </t6>
+                        <t7 class="c2">
+                            <t12 class="c1"/>
+                        </t7>
+                        <t8 class="c1"/>
+                    </t1>
+                    """,
+                    't5',
+                    ('.c1',),
+                    lambda e: e.tag,
+                    ['t6', 't8'],
+                    ),
+                (
+                    """
+                    <t1>
+                        <t2 class="c1"/>
+                        <t3/>
+                    </t1>
+                    """,
+                    't3',
+                    ('.c1',),
+                    lambda e: e.tag,
+                    [],
+                    ),
+                ]),
+            'execution_failure_cases': selector_actions_execution_failure_cases,
+            'creation_failure_cases': selector_actions_creation_failure_cases,
+            },
+        {
+            # matching
+            'names': ('matching', 'm'),
             # TODO
             },
         ]
@@ -280,7 +618,10 @@ def test_action_success(name, args, in_value, out_value):
 
     action = actions.make_action(parsed_action)
 
-    assert action.execute(in_value) == out_value
+    if callable(out_value):
+        assert out_value(action.execute(in_value))
+    else:
+        assert action.execute(in_value) == out_value
 
 
 def test_action_execution_failure(name, args, in_value, exception_class):

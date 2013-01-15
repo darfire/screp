@@ -41,7 +41,7 @@ class GenericTermAction(BaseTermAction):
         self.out_type = out_type
         if args is None:
             args = []
-        self._args = args
+        self._args = list(args)
 
 
     def execute(self, value):
@@ -74,19 +74,30 @@ class AxisSelectorTermAction(GenericTermAction):
         return self._f(value, self._selector, *self._args)
 
 
-class SiblingTermAction(GenericTermAction):
+class CustomSelectorTermAction(GenericTermAction):
     in_type = 'element'
     out_type = 'element_set'
 
-    def __init__(self, selector, identification):
-        self._id = identification
+    def __init__(self, f, selector_class, in_type=None, out_type=None, identification=None, args=None):
+        super(CustomSelectorTermAction, self).__init__(f, in_type=in_type, out_type=out_type, identification=identification, args=args)
 
+        self._selector = selector_class(self._args[0])
+
+        del self._args[0]
+
+
+    def execute(self, value):
+        return self._f(value, self._selector, *self._args)
+
+
+class SiblingSelector(object):
+    def __init__(self, selector):
         self._preceding_sel = XPath(css_to_xpath(selector, prefix="preceding-sibling::"))
         self._following_sel = XPath(css_to_xpath(selector, prefix="following-sibling::"))
 
 
-    def execute(self, value):
-        return self._preceding_sel(value) + self._following_sel(value)
+    def __call__(self, element):
+        return self._preceding_sel(element) + self._following_sel(element)
 
 
 class AnchorTermAction(BaseTermAction):
@@ -176,34 +187,52 @@ def make_x_selector_action(f, axis, in_type, out_type):
     return builder
 
 
-def make_siblings_action():
+def make_custom_selector_action(f, selector_class, in_type, out_type):
     def builder(identification, args):
-        (selector,) = args
-        return SiblingTermAction(selector, identification)
+        return CustomSelectorTermAction(f, selector_class, in_type=in_type, out_type=out_type, identification=identification, args=args)
+
+    return builder
 
 
 def match_selector(elset, selector):
     return sum(map(selector, elset), [])
 
 
+def get_attr(element, attr):
+    v = element.get(attr)
+    if v is None:
+        raise KeyError("Element doesn't have attribute '%s'" % (attr,))
+    else:
+        return v
+
+
+def get_parent(element):
+    parent = element.getparent()
+
+    if parent is None:
+        raise ValueError("Could not get parent: element is root")
+    else:
+        return parent
+
+
 actions = [
         # accessors
         (('first', 'f'),            make_generic_action(lambda s: s[0], 'element_set', 'element')),
         (('last', 'l'),             make_generic_action(lambda s: s[-1], 'element_set', 'element')),
-        (('class',),                make_generic_action(lambda e: e.get('class'), 'element', 'string')),
-        (('id',),                   make_generic_action(lambda e: e.get('id'), 'element', 'string')),
-        (('parent', 'p'),           make_generic_action(lambda e: e.getparent(), 'element', 'element')),
+        (('class',),                make_generic_action(lambda e: get_attr(e, 'class'), 'element', 'string')),
+        (('id',),                   make_generic_action(lambda e: get_attr(e, 'id'), 'element', 'string')),
+        (('parent', 'p'),           make_generic_action(lambda e: get_parent(e), 'element', 'element')),
         (('text',),                 make_generic_action(lambda e: e.text, 'element', 'string')),
         (('tag',),                  make_generic_action(lambda e: e.tag, 'element', 'string')),
-        (('attr', 'a'),             make_generic_action(lambda e, a: e.get(a), 'element', 'string')),
+        (('attr', 'a'),             make_generic_action(lambda e, a: get_attr(e, a), 'element', 'string')),
         (('nth', 'n'),              make_generic_action(lambda s, i: s[i], 'element_set', 'element')),
         (('desc', 'd'),             make_selector_action(lambda e, sel: sel(e), 'element', 'element_set')),
-        (('first-desc', 'fd'),      make_selector_action(lambda e, sel: sel(e)[0], 'element', 'element')),
+        (('fdesc', 'fd'),           make_selector_action(lambda e, sel: sel(e)[0], 'element', 'element')),
         (('ancestors', 'ancs'),     make_x_selector_action(lambda e, sel: sel(e), 'ancestor::', 'element', 'element_set')),
         (('children', 'kids'),      make_x_selector_action(lambda e, sel: sel(e), 'child::', 'element', 'element_set')),
         (('fsiblings', 'fsibs'),    make_x_selector_action(lambda e, sel: sel(e), 'following-sibling::', 'element', 'element_set')),
         (('psiblings', 'psibs'),    make_x_selector_action(lambda e, sel: sel(e), 'preceding-sibling::', 'element', 'element_set')),
-        (('siblings', 'sibs'),      make_siblings_action),
+        (('siblings', 'sibs'),      make_custom_selector_action(lambda e, sel: sel(e), SiblingSelector, 'element', 'element_set')),
         (('matching', 'm'),         make_x_selector_action(match_selector, 'self::', 'element_set', 'element_set')),
 
 
@@ -232,15 +261,15 @@ def make_action(parsed_action):
         raise KeyError('Unknown action %s' % (parsed_action.location,))
 
 
-def make_term(pterm):
+def make_term(pterm, required_out_type=None):
     actions = [AnchorTermAction(pterm.anchor.name)] + map(lambda ta: make_action(ta), pterm.accessors + pterm.filters)
+    if required_out_type is not None:
+        if len(actions) == 0 or actions[-1].out_type != required_out_type:
+            raise ValueError("Term must have out_type '%s', has '%s'!" % (required_out_type, actions[-1].out_type))
     return Term(actions)
 
 
 def make_anchor(name, pterm):
-    term = make_term(pterm)
+    term = make_term(pterm, required_out_type='element')
 
-    if term.out_type != 'element':
-        raise ValueError("Anchor definition '%s' has out type '%s' instead of 'element'!" % (name, term.out_type))
-    
     return Anchor(name, term)
