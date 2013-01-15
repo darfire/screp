@@ -272,7 +272,8 @@ class TestAnchorTermAction(object):
 
 class Test_make_action(object):
 
-    def setup_actions_dir(self, monkeypatch, mock_actions):
+    @staticmethod
+    def setup_actions_dir(monkeypatch, mock_actions):
         import screp.actions as module
 
         monkeypatch.setattr(module, 'actions_dir', dict(module.multiply_keys(mock_actions)))
@@ -292,7 +293,7 @@ class Test_make_action(object):
 
             return mock_value
 
-        self.setup_actions_dir(monkeypatch, [
+        Test_make_action.setup_actions_dir(monkeypatch, [
             (mock_ids,   action_builder),
             ])
 
@@ -307,7 +308,7 @@ class Test_make_action(object):
         import screp.actions as module
         from screp.term_parser import ParsedTermAction
 
-        self.setup_actions_dir(monkeypatch, [
+        Test_make_action.setup_actions_dir(monkeypatch, [
             (('action',),   lambda id, args: 'value'),
             ])
 
@@ -316,8 +317,98 @@ class Test_make_action(object):
 
 
 class Test_make_term(object):
-    # TODO
-    pass
+
+    def setup_actions_dir(self, monkeypatch):
+        import screp.actions as module
+        import screp.term_parser as term_parser
+        def f1(value):
+            assert value == 'value1'
+            return 'value2'
+
+        def f2(value):
+            assert value == 'value2'
+            return 'value3'
+
+        Test_make_action.setup_actions_dir(monkeypatch, [
+            (('a1',),    lambda id, args: TestTermAction.make_action(f1, out_type='t1')),
+            (('a2',),    lambda id, args: TestTermAction.make_action(f2, in_type='t1', out_type='t2')),
+            ])
+
+
+    def make_context(self):
+        def ctx_f(anchor):
+            assert anchor == '$'
+            return 'value1'
+
+        return TestAnchorTermAction.make_context(ctx_f)
+
+
+    def test_make_term(self, monkeypatch):
+        import screp.actions as module
+        import screp.term_parser as term_parser
+
+        self.setup_actions_dir(monkeypatch)
+
+        pterm = term_parser.ParsedTerm(
+                term_parser.ParsedAnchor('$', 1),
+                [term_parser.ParsedTermAction('a1', 1, [])],
+                [term_parser.ParsedTermAction('a2', 1, [])],
+                )
+
+        term = module.make_term(pterm)
+
+        assert term.execute(self.make_context()) == 'value3'
+
+
+    def test_make_term_no_actions(self, monkeypatch):
+        import screp.actions as module
+        import screp.term_parser as term_parser
+        def ctx_f(anchor):
+            assert anchor == '$'
+            return 'value1'
+
+        pterm = term_parser.ParsedTerm(
+                term_parser.ParsedAnchor('$', 1),
+                [],
+                [],
+                )
+
+        term = module.make_term(pterm)
+
+        assert term.execute(self.make_context()) == 'value1'
+
+
+    def test_make_term_required_out_type(self, monkeypatch):
+        import screp.actions as module
+        import screp.term_parser as term_parser
+
+        self.setup_actions_dir(monkeypatch)
+
+        pterm = term_parser.ParsedTerm(
+                term_parser.ParsedAnchor('$', 1),
+                [term_parser.ParsedTermAction('a1', 1, [])],
+                [term_parser.ParsedTermAction('a2', 1, [])],
+                )
+
+        term = module.make_term(pterm, required_out_type='t2')
+
+        assert term.execute(self.make_context()) == 'value3'
+
+
+    def test_make_term_required_out_type_fails(self, monkeypatch):
+        import screp.actions as module
+        import screp.term_parser as term_parser
+
+        self.setup_actions_dir(monkeypatch)
+
+        pterm = term_parser.ParsedTerm(
+                term_parser.ParsedAnchor('$', 1),
+                [term_parser.ParsedTermAction('a1', 1, [])],
+                [term_parser.ParsedTermAction('a2', 1, [])],
+                )
+
+        with pytest.raises(Exception):
+            term = module.make_term(pterm, required_out_type='t3')
 
 
 class Test_make_anchor(object):
