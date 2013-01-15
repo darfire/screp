@@ -271,11 +271,55 @@ class TestAnchorTermAction(object):
 
 
 class Test_make_action(object):
-    # TODO
-    pass
+
+    def setup_actions_dir(self, monkeypatch, mock_actions):
+        import screp.actions as module
+
+        monkeypatch.setattr(module, 'actions_dir', dict(module.multiply_keys(mock_actions)))
+
+
+    def test_make_action(self, monkeypatch):
+        import screp.actions as module
+        from screp.term_parser import ParsedTermAction
+
+        mock_ids = ('action', 'a')
+        mock_args = [1, 2, 'three']
+        mock_value = 'value'
+
+        def action_builder(identification, args):
+            assert identification in mock_ids
+            assert args is mock_args
+
+            return mock_value
+
+        self.setup_actions_dir(monkeypatch, [
+            (mock_ids,   action_builder),
+            ])
+
+        a1 = module.make_action(ParsedTermAction('action', 1, mock_args))
+
+        a2 = module.make_action(ParsedTermAction('a', 1, mock_args))
+
+        assert a1 == mock_value and a2 == mock_value
+
+
+    def test_make_action_not_found(self, monkeypatch):
+        import screp.actions as module
+        from screp.term_parser import ParsedTermAction
+
+        self.setup_actions_dir(monkeypatch, [
+            (('action',),   lambda id, args: 'value'),
+            ])
+
+        with pytest.raises(KeyError):
+            module.make_action(ParsedTermAction('other_action', 1, []))
 
 
 class Test_make_term(object):
     # TODO
     pass
+
+
+class Test_make_anchor(object):
+    # TODO
     pass
