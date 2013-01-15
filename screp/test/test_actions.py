@@ -280,7 +280,10 @@ def test_action_success(name, args, in_value, out_value):
 
     action = actions.make_action(parsed_action)
 
-    assert action.execute(in_value) == out_value
+    if callable(out_value):
+        assert out_value(action.execute(in_value))
+    else:
+        assert action.execute(in_value) == out_value
 
 
 def test_action_execution_failure(name, args, in_value, exception_class):
