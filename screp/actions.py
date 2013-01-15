@@ -41,7 +41,7 @@ class GenericTermAction(BaseTermAction):
         self.out_type = out_type
         if args is None:
             args = []
-        self._args = args
+        self._args = list(args)
 
 
     def execute(self, value):
