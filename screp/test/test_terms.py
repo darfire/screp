@@ -91,11 +91,6 @@ class TestTermAction(object):
         assert not action1.can_precede(action2)
 
 
-    def test_name(self):
-        # TODO:
-        pass
-
-
 class TestTerm(object):
     @staticmethod
     def make_term(actions):
@@ -146,6 +141,13 @@ class TestTerm(object):
         pass
 
 
+    def test_execute_no_actions_defined(self):
+        term = TestTerm.make_term([])
+
+        with pytest.raises(Exception):
+            term.execute('value')
+
+
     def test_add_action(self):
         def f1(v):
             return v + '1'
@@ -172,8 +174,24 @@ class TestTerm(object):
 
     
     def test_last_action(self):
-        # TODO:
-        pass
+        term = TestTerm.make_term([TestTermAction.make_action(lambda x: x, out_type='t1')])
+
+        la = TestTermAction.make_action(lambda x: x, in_type='t1', out_type='t2')
+        term.add_action(la)
+
+        assert term.last_action == la
+
+
+    def test_out_type(self):
+        term = TestTerm.make_term([TestTermAction.make_action(lambda x: x, out_type='t1')])
+
+        assert term.out_type == 't1'
+
+
+    def test_out_type_none(self):
+        term = TestTerm.make_term([])
+
+        assert term.out_type is None
 
 
 class TestGenericTermAction(object):
