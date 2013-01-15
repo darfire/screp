@@ -223,18 +223,51 @@ class TestSelectorTermAction(object):
 
 
 class TestAnchorTermAction(object):
+    class BogusContext(object):
+        def __init__(self, get_anchor):
+            self._get_anchor = get_anchor
+
+        
+        def get_anchor(self, key):
+            return self._get_anchor(key)
+
+
+    @staticmethod
+    def make_context(f):
+        return TestAnchorTermAction.BogusContext(f)
+
+
+    @staticmethod
+    def make_anchor_term_action(key):
+        import screp.actions as module
+        return module.AnchorTermAction(key)
+
 
     def test_get_anchor(self):
-        pass
+        def f(k):
+            assert k == 'anchor'
+            return 'value'
+
+        context = TestAnchorTermAction.make_context(f)
+
+        a = TestAnchorTermAction.make_anchor_term_action('anchor')
+
+        assert a.execute(context) == 'value'
 
 
     def test_get_anchor_raises(self):
-        pass
+        class BogusException(Exception):
+            pass
 
+        def f(k):
+            raise BogusException()
 
-class Test_make_action_of_class(object):
-    # TODO
-    pass
+        context = TestAnchorTermAction.make_context(f)
+
+        a = TestAnchorTermAction.make_anchor_term_action('anchor')
+
+        with pytest.raises(BogusException):
+            a.execute(context)
 
 
 class Test_make_action(object):
