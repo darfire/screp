@@ -74,19 +74,30 @@ class AxisSelectorTermAction(GenericTermAction):
         return self._f(value, self._selector, *self._args)
 
 
-class SiblingTermAction(GenericTermAction):
+class CustomSelectorTermAction(GenericTermAction):
     in_type = 'element'
     out_type = 'element_set'
 
-    def __init__(self, selector, identification):
-        self._id = identification
+    def __init__(self, f, selector_class, in_type=None, out_type=None, identification=None, args=None):
+        super(CustomSelectorTermAction, self).__init__(f, in_type=in_type, out_type=out_type, identification=identification, args=args)
 
+        self._selector = selector_class(self._args[0])
+
+        del self._args[0]
+
+
+    def execute(self, value):
+        return self._f(value, self._selector, *self._args)
+
+
+class SiblingSelector(object):
+    def __init__(self, selector):
         self._preceding_sel = XPath(css_to_xpath(selector, prefix="preceding-sibling::"))
         self._following_sel = XPath(css_to_xpath(selector, prefix="following-sibling::"))
 
 
-    def execute(self, value):
-        return self._preceding_sel(value) + self._following_sel(value)
+    def __call__(self, element):
+        return self._preceding_sel(element) + self._following_sel(element)
 
 
 class AnchorTermAction(BaseTermAction):
@@ -176,10 +187,11 @@ def make_x_selector_action(f, axis, in_type, out_type):
     return builder
 
 
-def make_siblings_action():
+def make_custom_selector_action(f, selector_class, in_type, out_type):
     def builder(identification, args):
-        (selector,) = args
-        return SiblingTermAction(selector, identification)
+        return CustomSelectorTermAction(f, selector_class, in_type=in_type, out_type=out_type, identification=identification, args=args)
+
+    return builder
 
 
 def match_selector(elset, selector):
@@ -220,7 +232,7 @@ actions = [
         (('children', 'kids'),      make_x_selector_action(lambda e, sel: sel(e), 'child::', 'element', 'element_set')),
         (('fsiblings', 'fsibs'),    make_x_selector_action(lambda e, sel: sel(e), 'following-sibling::', 'element', 'element_set')),
         (('psiblings', 'psibs'),    make_x_selector_action(lambda e, sel: sel(e), 'preceding-sibling::', 'element', 'element_set')),
-        (('siblings', 'sibs'),      make_siblings_action),
+        (('siblings', 'sibs'),      make_custom_selector_action(lambda e, sel: sel(e), SiblingSelector, 'element', 'element_set')),
         (('matching', 'm'),         make_x_selector_action(match_selector, 'self::', 'element_set', 'element_set')),
 
 
