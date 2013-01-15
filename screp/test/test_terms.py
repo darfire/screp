@@ -412,5 +412,35 @@ class Test_make_term(object):
 
 
 class Test_make_anchor(object):
-    # TODO
-    pass
+    @staticmethod
+    def make_mock_term(f, ot=None):
+        class BogusTerm(object):
+            out_type = ot
+            def execute(self, value):
+                return f(value)
+
+        return BogusTerm()
+
+
+    def test_make_anchor(self, monkeypatch):
+        import screp.actions as module
+
+        def f(value):
+            assert value == 'value'
+
+            return 'result'
+
+        def mock_make_term(pterm, required_out_type=None):
+            assert pterm == 'pterm'
+
+            assert required_out_type == 'element'
+
+            return Test_make_anchor.make_mock_term(f, ot='element')
+
+        monkeypatch.setattr(module, 'make_term', mock_make_term)
+
+        anchor = module.make_anchor('anchor_name', 'pterm')
+
+        assert anchor.name == 'anchor_name'
+        assert anchor.term.out_type == 'element'
+        assert anchor.execute('value') == 'result'
