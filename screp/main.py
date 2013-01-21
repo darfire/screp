@@ -57,7 +57,7 @@ def report_error(header, msg):
 
 
 def print_record(string):
-    print string,
+    sys.stdout.write(string)
 
 
 def get_formatter():
