@@ -15,6 +15,29 @@ from pyparsing import (
 from .actions import (
         make_action,
         )
+from .idloc import (
+        LocationFactory,
+        Identification,
+        )
+
+location_factory = LocationFactory('Unknown')
+
+
+class location_factory_context(object):
+    def __init__(self, loc_fac):
+        self.loc_fac = loc_fac
+
+    
+    def __enter__(self):
+        global location_factory
+        self.old_loc_fac = location_factory
+        location_factory = self.loc_fac
+
+
+    def __exit__(self, t, v, tb):
+        global location_factory
+        location_factory = self.old_loc_fac
+
 
 def set_parser_results(res, value):
     res[0] = value
@@ -34,10 +57,6 @@ def any_of_keywords(kws):
 
 anchor_kws = ['$', '@']
 
-class Location(object):
-    pass
-
-
 class ParsedTerm(object):
     def __init__(self, anchor, accessors, filters):
         self.anchor = anchor
@@ -46,31 +65,31 @@ class ParsedTerm(object):
 
 
 class ParsedTermAction(object):
-    def __init__(self, name, location, args=None):
+    def __init__(self, name, identification, args=None):
         self.name = name
         if args is None:
             args = ()
 
         self.args = args
 
-        self.location = location
+        self.identification = identification
 
 
     def __str__(self):
-        return "ParsedTermAction<%s(%s) at %s>" % (self.name, ', '.join(self.args), self.location)
+        return "ParsedTermAction<%s>" % (self.identification,)
 
 
     __repr__ = __str__
 
 
 class ParsedAnchor(object):
-    def __init__(self, name, location):
+    def __init__(self, name, identification=None):
         self.name = name
-        self.location = location
+        self.identification = identification
 
 
     def __str__(self):
-        return "ParsedAnchor<%s at %s>" % (self.name, self.location)
+        return "ParsedAnchor<%s>" % (self.identification,)
 
 
     __repr__ = __str__
@@ -95,7 +114,8 @@ argument_list_parser = Literal('(').suppress() + argument_parser + ZeroOrMore(Li
 
 action_parser = identifier_parser + Optional(Group(argument_list_parser), default=[])
 
-action_parser.setParseAction(lambda s, l, t: set_parser_results(t, ParsedTermAction(t[0], l, args=t[1])))
+action_parser.setParseAction(lambda s, l, t: set_parser_results(t, 
+    ParsedTermAction(t[0], Identification(t[0], 'action', location_factory.make_location(l)), args=t[1])))
 
 filter_parser = Literal('|').suppress() + action_parser
 
@@ -103,7 +123,8 @@ accessor_parser = Literal('.').suppress() + action_parser
 
 anchor_parser = (any_of_keywords(anchor_kws) ^ identifier_parser)
 
-anchor_parser.addParseAction(lambda s, l, t: set_parser_results(t, ParsedAnchor(t[0], l)))
+anchor_parser.addParseAction(lambda s, l, t: set_parser_results(t,
+    ParsedAnchor(t[0], Identification(t[0], 'anchor', location_factory.make_location(l)))))
 
 term_parser = anchor_parser + Group(ZeroOrMore(accessor_parser)) + Group(ZeroOrMore(filter_parser))
 

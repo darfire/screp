@@ -5,8 +5,18 @@ from pyparsing import (
         )
 import re
 
-from .term_parser import curly_term_parser, parse_term
-from .actions import make_term, make_anchor
+from .term_parser import (
+        curly_term_parser,
+        parse_term,
+        location_factory_context,
+        )
+from .actions import (
+        make_term,
+        make_anchor,
+        )
+from .idloc import (
+        LocationFactory,
+        )
 from .formatter import CSVFormatter
 
 comma = Literal(',').suppress()
@@ -15,11 +25,12 @@ csv_format_parser = curly_term_parser + ZeroOrMore(comma + curly_term_parser) + 
 
 
 def parse_csv_formatter(value, header=None):
-    result = csv_format_parser.parseString(value)
+    with location_factory_context(LocationFactory('csv_format')):
+        result = csv_format_parser.parseString(value)
 
-    terms = map(lambda pterm: make_term(pterm, required_out_type='string'), result)
+        terms = map(lambda pterm: make_term(pterm, required_out_type='string'), result)
 
-    return (CSVFormatter(len(terms), header=header), terms)
+        return (CSVFormatter(len(terms), header=header), terms)
 
 
 anchor_re = re.compile('^(?P<name>[_A-Za-z][_A-Za-z0-9]*)\s*=(?P<term_spec>.*)$')
@@ -33,7 +44,8 @@ def parse_anchor(string):
     name = m.group('name')
 
     try:
-        pterm = parse_term(m.group('term_spec'))
+        with location_factory_context(LocationFactory('anchor[%s]' % (name,), index_offset=m.start('term_spec'))):
+            pterm = parse_term(m.group('term_spec'))
     except Exception as e:
         raise ValueError("Anchor '%s': %s" % (name, e))
 
