@@ -47,6 +47,10 @@ def set_parser_results(res, value):
     return res
 
 
+def set_action_type(action, type):
+    action.identification.type = type
+
+
 def any_of_keywords(kws):
     t = NoMatch()
 
@@ -119,7 +123,11 @@ action_parser.setParseAction(lambda s, l, t: set_parser_results(t,
 
 filter_parser = Literal('|').suppress() + action_parser
 
+filter_parser.setParseAction(lambda s, l, t: set_action_type(t[0], 'filter'))
+
 accessor_parser = Literal('.').suppress() + action_parser
+
+accessor_parser.setParseAction(lambda s, l, t: set_action_type(t[0], 'accessor'))
 
 anchor_parser = (any_of_keywords(anchor_kws) ^ identifier_parser)
 
