@@ -282,13 +282,17 @@ class Test_make_action(object):
     def test_make_action(self, monkeypatch):
         import screp.actions as module
         from screp.term_parser import ParsedTermAction
+        from screp.idloc import (
+                Identification,
+                Location,
+                )
 
         mock_ids = ('action', 'a')
         mock_args = [1, 2, 'three']
         mock_value = 'value'
 
         def action_builder(identification, args):
-            assert identification in mock_ids
+            assert identification.name in mock_ids
             assert args is mock_args
 
             return mock_value
@@ -297,9 +301,11 @@ class Test_make_action(object):
             (mock_ids,   action_builder),
             ])
 
-        a1 = module.make_action(ParsedTermAction('action', 1, mock_args))
+        a1 = module.make_action(ParsedTermAction('action',
+            Identification('action', 'type', Location('X', 1)), mock_args))
 
-        a2 = module.make_action(ParsedTermAction('a', 1, mock_args))
+        a2 = module.make_action(ParsedTermAction('a',
+            Identification('a', 'type', Location('X', 2)), mock_args))
 
         assert a1 == mock_value and a2 == mock_value
 

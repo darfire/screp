@@ -7,6 +7,7 @@ from lxml.cssselect import (
         )
 
 from .context import XMLContext
+from .utils import raise_again
 
 
 supported_types = ['element', 'element_set', 'string', 'context']
@@ -44,8 +45,15 @@ class GenericTermAction(BaseTermAction):
         self._args = list(args)
 
 
-    def execute(self, value):
+    def sub_execute(self, value):
         return self._f(value, *self._args)
+
+
+    def execute(self, value):
+        try:
+            return self.sub_execute(value)
+        except Exception as e:
+            raise_again('%s: %s' % (self._id, e))
 
 
 class SelectorTermAction(GenericTermAction):
@@ -57,7 +65,7 @@ class SelectorTermAction(GenericTermAction):
         del self._args[0]
 
 
-    def execute(self, value):
+    def sub_execute(self, value):
         return self._f(value, self._selector, *self._args)
 
 
@@ -70,7 +78,7 @@ class AxisSelectorTermAction(GenericTermAction):
         del self._args[0]
 
 
-    def execute(self, value):
+    def sub_execute(self, value):
         return self._f(value, self._selector, *self._args)
 
 
@@ -86,7 +94,7 @@ class CustomSelectorTermAction(GenericTermAction):
         del self._args[0]
 
 
-    def execute(self, value):
+    def sub_execute(self, value):
         return self._f(value, self._selector, *self._args)
 
 
@@ -104,8 +112,9 @@ class AnchorTermAction(BaseTermAction):
     in_type = 'context'
     out_type = 'element'
 
-    def __init__(self, anchor):
+    def __init__(self, anchor, identification=None):
         self._anchor = anchor
+        self._id = identification
 
 
     def execute(self, value):
@@ -256,13 +265,13 @@ actions_dir = dict(multiply_keys(actions))
 
 def make_action(parsed_action):
     try:
-        return actions_dir[parsed_action.name](parsed_action.name, parsed_action.args)
+        return actions_dir[parsed_action.name](parsed_action.identification, parsed_action.args)
     except KeyError:
-        raise KeyError('Unknown action %s' % (parsed_action.location,))
+        raise KeyError('Unknown action %s' % (parsed_action.identification,))
 
 
 def make_term(pterm, required_out_type=None):
-    actions = [AnchorTermAction(pterm.anchor.name)] + map(lambda ta: make_action(ta), pterm.accessors + pterm.filters)
+    actions = [AnchorTermAction(pterm.anchor.name, pterm.anchor.identification)] + map(lambda ta: make_action(ta), pterm.accessors + pterm.filters)
     if required_out_type is not None:
         if len(actions) == 0 or actions[-1].out_type != required_out_type:
             raise ValueError("Term must have out_type '%s', has '%s'!" % (required_out_type, actions[-1].out_type))
