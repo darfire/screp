@@ -112,7 +112,7 @@ class AnchorTermAction(BaseTermAction):
     in_type = 'context'
     out_type = 'element'
 
-    def __init__(self, anchor, identification):
+    def __init__(self, anchor, identification=None):
         self._anchor = anchor
         self._id = identification
 
