@@ -18,6 +18,7 @@ from .idloc import (
         LocationFactory,
         )
 from .formatter import CSVFormatter
+from .utils import raise_again
 
 comma = Literal(',').suppress()
 
@@ -47,7 +48,7 @@ def parse_anchor(string):
         with location_factory_context(LocationFactory('anchor[%s]' % (name,), index_offset=m.start('term_spec'))):
             pterm = parse_term(m.group('term_spec'))
     except Exception as e:
-        raise ValueError("Anchor '%s': %s" % (name, e))
+        raise_again("Anchor '%s': %s" % (name, e))
 
     return make_anchor(name, pterm)
 

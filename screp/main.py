@@ -13,6 +13,7 @@ from .format_parsers import (
 from .context import (
         XMLContext,
         )
+from .utils import raise_again
 
 class BaseDataSource(object):
     name = 'Unknown'
@@ -52,8 +53,8 @@ class FileDataSource(object):
             return f.read()
 
 
-def report_error(header, msg):
-    print >>sys.stderr, '%s: %s' % (header, msg)
+def report_error(e):
+    print >>sys.stderr, "ERROR: %s" % (e,)
 
 
 def print_record(string):
@@ -61,23 +62,36 @@ def print_record(string):
 
 
 def get_formatter():
-    if options.csv is not None:
-        return parse_csv_formatter(options.csv, header=options.csv_header)
+    try:
+        if options.csv is not None:
+            return parse_csv_formatter(options.csv, header=options.csv_header)
 
-    raise ValueError('No format defined')
+        raise ValueError('No format defined!')
+    except Exception as e:
+        raise_again('Parsing format specification: %s' % (e,))
 
 
 def get_selector(selector):
     try:
         return CSSSelector(selector)
     except Exception as e:
-        report_error('Parsing selector', e)
+        raise_again('Parsing selector: %s' % (e,))
+
+
+def get_anchor(string):
+    try:
+        return parse_anchor(string)
+    except Exception as e:
+        raise_again('Parsing anchor: %s' % (e,))
 
 
 def parse_xml_data(data):
-    parser = etree.HTMLParser()
+    try:
+        parser = etree.HTMLParser()
 
-    return etree.fromstring(data, parser)
+        return etree.fromstring(data, parser)
+    except Exception as e:
+        raise_again('Parsing document: %s' % (e,))
 
 
 def compute_value(substitor, context):
@@ -159,6 +173,8 @@ def parse_cli_options(argv):
             help='define secondary anchor, relative to the primary anchors, using the format <name>=<term>')
     parser.add_option('-H', '--csv-header', dest='csv_header', action='store',
            default=None, help='print csv header')
+    parser.add_option('-d', '--debug', dest='debug', action='store_true', default=False,
+            help='print debugging information on errors; implies -e')
 #   parser.add_option('-j', '--json', dest='json', action='store',
 #           default=None, help='print record as json object')
 #   parser.add_option('-f', '--format', dest='format', action='store',
@@ -190,15 +206,17 @@ def main():
 
         (formatter, terms) = get_formatter()
 
-        anchors = map(parse_anchor, options.anchors)
+        anchors = map(get_anchor, options.anchors)
 
         selector = get_selector(selector)
 
         screp_all(formatter, terms, anchors, selector, sources)
 
     except Exception as e:
-        # print_record(e)
-        raise 
+        if options.debug:
+            raise
+        else:
+            report_error(e)
 
         sys.exit(1)
     else:

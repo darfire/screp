@@ -136,7 +136,7 @@ class Term(object):
     def add_action(self, action):
         if len(self._actions) > 0:
             if not action.can_follow(self.last_action):
-                raise TypeError('%s cannot follow %s: expects type %s, receives %s'\
+                raise TypeError('%s cannot follow %s: expects type %s, receives %s!'\
                         % (action, self.last_action, action.in_type, self.last_action.out_type))
         self._actions.append(action)
 
@@ -148,7 +148,7 @@ class Term(object):
 
     def execute(self, value):
         if len(self._actions) == 0:
-            raise ValueError("No actions defined")
+            raise ValueError("No actions defined!")
 
         for a in self._actions:
             value = a.execute(value)
@@ -210,7 +210,7 @@ def match_selector(elset, selector):
 def get_attr(element, attr):
     v = element.get(attr)
     if v is None:
-        raise KeyError("Element doesn't have attribute '%s'" % (attr,))
+        raise Exception("Element doesn't have attribute '%s'!" % (attr,))
     else:
         return v
 
@@ -219,7 +219,7 @@ def get_parent(element):
     parent = element.getparent()
 
     if parent is None:
-        raise ValueError("Could not get parent: element is root")
+        raise ValueError("Could not get parent: element is root!")
     else:
         return parent
 
@@ -267,7 +267,7 @@ def make_action(parsed_action):
     try:
         return actions_dir[parsed_action.name](parsed_action.identification, parsed_action.args)
     except KeyError:
-        raise KeyError('Unknown action %s' % (parsed_action.identification,))
+        raise Exception("Unknown action '%s'!" % (parsed_action.identification,))
 
 
 def make_term(pterm, required_out_type=None):
