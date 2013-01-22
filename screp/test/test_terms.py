@@ -318,7 +318,7 @@ class Test_make_action(object):
             (('action',),   lambda id, args: 'value'),
             ])
 
-        with pytest.raises(KeyError):
+        with pytest.raises(Exception):
             module.make_action(ParsedTermAction('other_action', 1, []))
 
 

@@ -23,6 +23,10 @@ from .idloc import (
 location_factory = LocationFactory('Unknown')
 
 
+def make_location(index):
+    return location_factory.make_location(index)
+
+
 class location_factory_context(object):
     def __init__(self, loc_fac):
         self.loc_fac = loc_fac
@@ -119,7 +123,7 @@ argument_list_parser = Literal('(').suppress() + argument_parser + ZeroOrMore(Li
 action_parser = identifier_parser + Optional(Group(argument_list_parser), default=[])
 
 action_parser.setParseAction(lambda s, l, t: set_parser_results(t, 
-    ParsedTermAction(t[0], Identification(t[0], 'action', location_factory.make_location(l)), args=t[1])))
+    ParsedTermAction(t[0], Identification(t[0], 'action', make_location(l)), args=t[1])))
 
 filter_parser = Literal('|').suppress() + action_parser
 
@@ -132,7 +136,7 @@ accessor_parser.setParseAction(lambda s, l, t: set_action_type(t[0], 'accessor')
 anchor_parser = (any_of_keywords(anchor_kws) ^ identifier_parser)
 
 anchor_parser.addParseAction(lambda s, l, t: set_parser_results(t,
-    ParsedAnchor(t[0], Identification(t[0], 'anchor', location_factory.make_location(l)))))
+    ParsedAnchor(t[0], Identification(t[0], 'anchor', make_location(l)))))
 
 term_parser = anchor_parser + Group(ZeroOrMore(accessor_parser)) + Group(ZeroOrMore(filter_parser))
 
