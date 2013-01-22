@@ -25,8 +25,11 @@ class TestActionParser(object):
     @staticmethod
     def check_action(action, name, extras):
         import screp.term_parser as module
+        import screp.idloc as idloc
+
         assert type(action) == module.ParsedTermAction
         assert action.name == name and tuple(action.args) == tuple(extras)
+        assert type(action.identification) == idloc.Identification
 
 
     @pytest.mark.parametrize(('string', 'match', 'tail'), matches)
@@ -313,8 +316,11 @@ class TestAnchorParser(object):
     @staticmethod
     def check_anchor(anchor, name):
         import screp.term_parser as module
+        import screp.idloc as idloc
+
         assert type(anchor) == module.ParsedAnchor
         assert anchor.name == name
+        assert type(anchor.identification) is idloc.Identification
 
     @pytest.mark.parametrize(('string', 'match', 'tail'), TestIdentifierParser.matches + matches)
     def test_matches(self, string, match, tail):

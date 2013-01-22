@@ -292,7 +292,11 @@ class Test_make_action(object):
         mock_value = 'value'
 
         def action_builder(identification, args):
+            assert type(identification) is Identification
+
             assert identification.name in mock_ids
+            assert identification.type == 'type'
+
             assert args is mock_args
 
             return mock_value
