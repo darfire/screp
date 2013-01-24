@@ -33,13 +33,18 @@ class OpenedFileDataSource(object):
 
 
 class URLDataSource(object):
-    def __init__(self, url):
+    def __init__(self, url, user_agent=None):
         self._url = url
         self.name = url
+        self._user_agent = user_agent
         
 
     def read_data(self):
-        return urllib2.urlopen(self._url).read()
+        request = urllib2.Request(self._url)
+        if self._user_agent is not None:
+            request.add_header('User-Agent', self._user_agent)
+
+        return urllib2.urlopen(request).read()
 
 
 class FileDataSource(object):
@@ -147,13 +152,26 @@ def screp_all(formatter, terms, anchors, selector, sources):
     print_record(formatter.end_format())
 
 
+def make_url_data_source(source):
+    global options
+    
+    return URLDataSource(source, user_agent=options.user_agent)
+
+
 def make_data_source(source):
     url = urlparse.urlparse(source)
 
     if url.scheme != '':
-        return URLDataSource(source)
+        return make_url_data_source(source)
     else:
         return FileDataSource(source)
+
+
+def make_data_sources(sources):
+    if len(sources) == 0:
+        return [OpenedFileDataSource('STDIN', sys.stdin)]
+    else:
+        return map(make_data_source, sources)
 
 
 def parse_cli_options(argv):
@@ -175,6 +193,8 @@ def parse_cli_options(argv):
            default=None, help='print csv header')
     parser.add_option('-d', '--debug', dest='debug', action='store_true', default=False,
             help='print debugging information on errors; implies -e')
+    parser.add_option('-A', '--user-agent', dest='user_agent', action='store', default=None,
+            help='user agent to use when retrieving URLs')
 #   parser.add_option('-j', '--json', dest='json', action='store',
 #           default=None, help='print record as json object')
 #   parser.add_option('-f', '--format', dest='format', action='store',
@@ -190,10 +210,7 @@ def parse_cli_options(argv):
 
     selector = args[0]
 
-    if len(args) == 1:
-        sources = [OpenedFileDataSource('STDIN', sys.stdin)]
-    else:
-        sources = map(make_data_source, args[1:])
+    sources = args[1:]
 
     return (options, selector, sources)
 
@@ -202,7 +219,9 @@ def main():
     global options
 
     try:
-        (options, selector, sources) = parse_cli_options(sys.argv[1:])
+        (options, selector, sources_raw) = parse_cli_options(sys.argv[1:])
+
+        sources = make_data_sources(sources_raw)
 
         (formatter, terms) = get_formatter()
 
