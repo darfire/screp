@@ -5,6 +5,7 @@ from lxml.cssselect import (
         CSSSelector,
         css_to_xpath,
         )
+import re
 
 from .context import XMLContext
 from .utils import raise_again
@@ -122,6 +123,65 @@ class AnchorTermAction(BaseTermAction):
         return value.get_anchor(self._anchor)
 
 
+class RegexTermAction(BaseTermAction):
+    in_type = 'string'
+    out_type = 'string'
+
+    char_to_flag = {
+            'i': re.IGNORECASE,
+            'l': re.LOCALE,
+            'm': re.MULTILINE,
+            's': re.DOTALL,
+            'u': re.UNICODE,
+            }
+
+    allowed_flags = frozenset(char_to_flag.keys() + ['g', 'f'])
+
+    def __init__(self, args, identification=None):
+        self._id = identification
+
+        if len(args) < 2 or len(args) > 3:
+            raise ValueError("Invalid number of arguments for 'resub'!")
+
+        self._replace = args[1]
+
+        if len(args) == 3:
+            sflags = args[2]
+        else:
+            sflags = ''
+
+        (self._count, flags) = self._handle_flags(sflags)
+
+        self._re = re.compile(args[0], flags=flags)
+
+
+    def _handle_flags(self, flags):
+        flags = set(flags)
+
+        bflags = 0
+
+        if not flags <= self.allowed_flags:
+            raise ValueError("Unknown flags: '%s'!" % (''.join(list(flags - self.allowed_flags)),))
+
+        for (k, f) in self.char_to_flag.items():
+            if k in flags:
+                bflags |= f
+
+        if 'g' in flags and 'f' in flags:
+            raise ValueError("Only one of 'g' and 'f' is allowed!")
+
+        count = 0
+
+        if 'f' in flags:
+            count = 1
+
+        return (count, bflags)
+
+
+    def execute(self, value):
+        return self._re.sub(self._replace, value, count=self._count)
+
+
 class Term(object):
     def __init__(self, actions=None):
         if actions is None:
@@ -224,6 +284,10 @@ def get_parent(element):
         return parent
 
 
+def regex_action_builder(identification, args):
+    return RegexTermAction(args, identification=identification)
+
+
 actions = [
         # accessors
         (('first', 'f'),            make_generic_action(lambda s: s[0], 'element_set', 'element')),
@@ -251,6 +315,7 @@ actions = [
         (('trim', 't'),             make_generic_action(lambda s: s.strip(), 'string', 'string')),
         (('strip',),                make_generic_action(lambda s, chars: s.strip(chars), 'string', 'string')),
         (('replace',),              make_generic_action(lambda s, old, new: s.replace(old, new), 'string', 'string')),
+        (('resub',),                regex_action_builder),
         ]
 
 
