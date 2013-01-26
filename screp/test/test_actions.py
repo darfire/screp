@@ -177,6 +177,24 @@ scenarios = [
                 ],
             },
         {
+            # replace
+            'names': ('replace',),
+            'success_cases': [
+                ('123xyz345xyz', ('xyz', 'a'), '123a345a'),
+                ('123xyz345xyz', ('xyw', 'abc'), '123xyz345xyz'),
+                ('', ('xyz', 'a'), ''),
+                ('xyz', ('xyz', ''), ''),
+                ],
+            'execution_failure_cases': [
+                ('abc', (), Exception),
+                ('abc', ('xyz',), Exception),
+                ('abc', (1, 'xyz'), Exception),
+                (123, ('xyz', 'abc'), Exception),
+                ([], ('xyz', 'abc'), Exception),
+                (el('<div/>'), ('xyz', 'abc'), Exception),
+                ],
+            },
+        {
             # class
             'names': ('class',),
             'success_cases': [
