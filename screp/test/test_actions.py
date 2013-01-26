@@ -161,6 +161,22 @@ scenarios = [
             'creation_failure_cases': []
             },
         {
+            # strip
+            'names': ('strip',),
+            'success_cases': [
+                ('x123yz', ('xyz',), '123'),
+                ('123xyz123', ('xyz',), '123xyz123'),
+                ('', ('xyz',), ''),
+                ('xxyyzz', ('xyz',), ''),
+                ],
+            'execution_failure_cases': [
+                (' AbC ', (), Exception),
+                (123, ('xyz',), Exception),
+                ([], ('xyz',), Exception),
+                (el('<div/>'), ('xyz',), Exception),
+                ],
+            },
+        {
             # class
             'names': ('class',),
             'success_cases': [
