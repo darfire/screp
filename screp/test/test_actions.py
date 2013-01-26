@@ -195,6 +195,29 @@ scenarios = [
                 ],
             },
         {
+            # resub
+            'names': ('resub',),
+            'success_cases': [
+                ('abc123abc345abcZ', ('(abc)(\d)', 'ABC\\2'), 'ABC123ABC345abcZ'),
+                ('abc123abc345abcZ', ('(abc)(\d)', 'ABC\\2', 'g'), 'ABC123ABC345abcZ'),
+                ('abc123abc345abcZ', ('(abc)(\d)', 'ABC\\2', 'f'), 'ABC123abc345abcZ'),
+                # TODO: test flags
+                ],
+            'execution_failure_cases': [
+                (1, ('(abc)(\d)', 'ABC\\2'), Exception),
+                ([], ('(abc)(\d)', 'ABC\\2'), Exception),
+                (el('<div/>'), ('(abc)(\d)', 'ABC\\2'), Exception),
+                ('abc123abc345abcZ', ('(abc)(\d)', []), Exception),
+                ('abc123abc345abcZ', ('(abc)(\d)', 123), Exception),
+                ],
+            'creation_failure_cases': [
+                ((123, 'ABC\\2'), Exception),
+                (('abc123', 'ABC\\2', 'fg'), Exception),
+                (('abc123', 'ABC\\2', 'z'), Exception),
+                (('abc123', 'ABC\\2', 123), Exception),
+                ],
+            },
+        {
             # class
             'names': ('class',),
             'success_cases': [
