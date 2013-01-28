@@ -8,6 +8,7 @@ import urlparse
 
 from .format_parsers import (
         parse_csv_formatter,
+        parse_json_formatter,
         parse_anchor,
         )
 from .context import (
@@ -68,8 +69,13 @@ def print_record(string):
 
 def get_formatter():
     try:
+        if [options.csv, options.json].count(None) > 1:
+            raise ValueError("Only one of (--csv, --json) may be specified!")
+
         if options.csv is not None:
             return parse_csv_formatter(options.csv, header=options.csv_header)
+        elif options.json is not None:
+            return parse_json_formatter(options.json, indent=options.json_indent)
 
         raise ValueError('No format defined!')
     except Exception as e:
@@ -195,8 +201,10 @@ def parse_cli_options(argv):
             help='print debugging information on errors; implies -e')
     parser.add_option('-A', '--user-agent', dest='user_agent', action='store', default=None,
             help='user agent to use when retrieving URLs')
-#   parser.add_option('-j', '--json', dest='json', action='store',
-#           default=None, help='print record as json object')
+    parser.add_option('-j', '--json', dest='json', action='store',
+            default=None, help='print record as json object')
+    parser.add_option('-I', '--indent-json', dest='json_indent', action='store_true', default=False,
+            help='indent json objects')
 #   parser.add_option('-f', '--format', dest='format', action='store',
 #           default=None, help='print record as custom format')
 #   parser.add_option('-U', '--base-url', dest='base_url', action='store',

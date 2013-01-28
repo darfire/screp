@@ -1,5 +1,8 @@
 import csv
+import json
 import StringIO
+
+DEFAULT_JSON_INDENT_LEVEL = 4
 
 
 class BaseFormatter(object):
@@ -67,3 +70,54 @@ class CSVFormatter(BaseFormatter):
 
 
     __repr__ = __str__
+
+
+class JSONFormatter(BaseFormatter):
+    def __init__(self, keys, indent=False):
+        self._keys = keys
+        self._at_first = True
+        if indent:
+            self._indent = DEFAULT_JSON_INDENT_LEVEL
+        else:
+            self._indent = None
+
+
+    def format_record(self, strings):
+        if len(strings) != len(self._keys):
+            raise ValueError("The number of values to be formatted doesn't match the number of parsed values")
+
+        string = ''
+
+        if self._at_first:
+            self._at_first = False
+            string += '\n'
+        else:
+            string += ',\n'
+
+        d = dict(zip(self._keys, strings))
+
+        string += json.dumps(d, indent=self._indent)
+
+        return string
+
+
+    def start_format(self):
+        return '['
+
+
+    def end_format(self):
+        s = ''
+        if not self._at_first:
+            s += '\n'
+        s += ']\n'
+
+        return s
+
+
+    def __str__(self):
+        return 'JSONFormatter(%s)' % (', '.join(self._keys),)
+
+
+    __repr__ = __str__
+
+

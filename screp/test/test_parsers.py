@@ -442,3 +442,101 @@ class TestTermParser(object):
 # TODO
 
 
+# json_format_parser tests
+class TestJSONFormatParser(object):
+    matches = [
+            ('v1=$.a1.a2 | f1 | f2, v2=anchor.a3, v3=anchor | f3',
+                [
+                    # key, anchor, accessors, filters
+                    (
+                        'v1',
+                        '$',
+                        [
+                            ('a1', ()),
+                            ('a2', ()),
+                            ],
+                        [
+                            ('f1', ()),
+                            ('f2', ()),
+                            ],
+                        ),
+                    (
+                        'v2',
+                        'anchor',
+                        [
+                            ('a3', ()),
+                            ],
+                        [],
+                        ),
+                    (
+                        'v3',
+                        'anchor',
+                        [],
+                        [
+                            ('f3', ()),
+                            ],
+                        ),
+                    ]),
+            ('v1=$.a1(1, 2) | f1(1, "2 abc", 3), v_2=@, _v3=anchor | f1(1, 2)    ',
+                [
+                    (
+                        'v1',
+                        '$',
+                        [
+                            ('a1', ('1', '2')),
+                            ],
+                        [
+                            ('f1', ('1', '2 abc', '3')),
+                            ],
+                        ),
+                    (
+                        'v_2',
+                        '@',
+                        [],
+                        [],
+                        ),
+                    (
+                        '_v3',
+                        'anchor',
+                        [],
+                        [
+                            ('f1', ('1', '2')),
+                            ],
+                        )
+                    ]
+                ),
+                ]
+
+    non_matches = [
+            ('v1=',),
+            ('',),
+            ('v1=$,',),
+            ('v2=1anchor.a1|f1',),
+            ('v1=$.a1, v2=anchor, tail',),
+            ('1v1=$.a1.a2 | f1 | f2',),
+            ('v1=$.a1 | f1 . f2',),
+            ]
+
+
+    @staticmethod
+    def check_pair_match(pair, match):
+        assert pair[0] == match[0]
+        TestTermParser.check_term(pair[1], *match[1:])
+
+
+    @pytest.mark.parametrize(('string', 'match'), matches)
+    def test_matches(self, string, match):
+        import screp.format_parsers as module
+
+        ret = module.json_format_parser.parseString(string)
+
+        for (p, m) in zip(ret, match):
+           TestJSONFormatParser.check_pair_match(p, m)
+
+    
+    @pytest.mark.parametrize(('string',), non_matches)
+    def test_non_matches(self, string):
+        import screp.format_parsers as module
+        import pyparsing
+        with pytest.raises(pyparsing.ParseException):
+            ret = module.json_format_parser.parseString(string)
