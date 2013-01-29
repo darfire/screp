@@ -434,12 +434,100 @@ class TestTermParser(object):
 
 
 
-# curly_term_parser
-# TODO
-
-
 # csv_format_parser tests
-# TODO
+class TestCSVFormatParser(object):
+    matches = [
+            ('$.a1(1, "a, bc", _id1), @.a2 | f1(1, _id2, ","), anchor',
+                [
+                    ( # anchor, accessors, filters
+                        '$',
+                        [
+                            ('a1', ('1', 'a, bc', '_id1')),
+                            ],
+                        [],
+                        ),
+                    (
+                        '@',
+                        [
+                            ('a2', ()),
+                            ],
+                        [
+                            ('f1', ('1', '_id2', ',')),
+                            ],
+                        ),
+                    (
+                        'anchor',
+                        [],
+                        [],
+                        ),
+                    ],
+                ),
+            (
+                'anchor1, anchor2,anchor3',
+                [
+                    (
+                        'anchor1',
+                        [],
+                        [],
+                        ),
+                    (
+                        'anchor2',
+                        [],
+                        [],
+                        ),
+                    (
+                        'anchor3',
+                        [],
+                        [],
+                        ),
+                    ],
+                ),
+            (
+                'anchor1.a1.a2(",") | f1 | f2(",") | f3',
+                [
+                    (
+                        'anchor1',
+                        [
+                            ('a1', ()),
+                            ('a2', (",",)),
+                            ],
+                        [
+                            ('f1', ()),
+                            ('f2', (',',)),
+                            ('f3', ()),
+                            ],
+                        ),
+                    ],
+                ),
+            ]
+
+
+
+    non_matches = [
+            ('1id.a1.a2 | f1 | f2',),
+            ('id.a1 | f1, id.a2 | f2,',),
+            ('',),
+            (',',),
+            ('id(1, "2").a1 | f1',),
+            ]
+
+    
+    @pytest.mark.parametrize(('string', 'match'), matches)
+    def test_matches(self, string, match):
+        import screp.format_parsers as module
+
+        ret = module.csv_format_parser.parseString(string)
+
+        for (p, m) in zip(ret, match):
+            TestTermParser.check_term(p, *m)
+
+
+    @pytest.mark.parametrize(('string',), non_matches)
+    def test_non_matches(self, string):
+        import screp.format_parsers as module
+        import pyparsing
+        with pytest.raises(pyparsing.ParseException):
+            ret = module.csv_format_parser.parseString(string)
 
 
 # json_format_parser tests
