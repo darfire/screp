@@ -7,7 +7,6 @@ from pyparsing import (
 import re
 
 from .term_parser import (
-        curly_term_parser,
         term_parser,
         parse_term,
         location_factory_context,
@@ -30,7 +29,7 @@ comma = Literal(',').suppress()
 
 equal = Literal('=').suppress()
 
-csv_format_parser = curly_term_parser + ZeroOrMore(comma + curly_term_parser) + StringEnd()
+csv_format_parser = term_parser + ZeroOrMore(comma + term_parser) + StringEnd()
 
 json_assignement_parser = Group(identifier_parser + equal + term_parser)
 

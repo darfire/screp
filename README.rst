@@ -144,7 +144,7 @@ The CSV output format is specified using the -c option. Optionally, using the -H
 specify a CSV header to output before outputting records.
 
 Example::
-    -c '{$.attr(title)}, {$.parent.desc(".price").text | trim}' -H 'name, price'
+    -c '$.attr(title), $.parent.desc(".price").text | trim' -H 'name, price'
 
 
 Specifying secondary anchors
