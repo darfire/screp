@@ -118,6 +118,24 @@ class JSONFormatter(BaseFormatter):
         return 'JSONFormatter(%s)' % (', '.join(self._keys),)
 
 
+class GeneralFormatter(BaseFormatter):
+    def __init__(self, inter_strings):
+        self._inter_strings = inter_strings
+
+
+    def format_record(self, values):
+        if len(values) != len(self._inter_strings) - 1:
+            raise ValueError("Invalid number of values. Expected %s, got %s" % (len(self._inter_strings) - 1, len(values)))
+
+        out = ''.join(map(lambda x: x[0] + x[1], zip(self._inter_strings, values + [''])))
+
+        return out + '\n'
+
+
+    def __str__(self):
+        return 'GeneralFormatter(%s)' % (', '.join(self._keys),)
+
+
     __repr__ = __str__
 
 

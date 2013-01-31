@@ -3,11 +3,13 @@ from pyparsing import (
         ZeroOrMore,
         StringEnd,
         Group,
+        SkipTo,
         )
 import re
 
 from .term_parser import (
         term_parser,
+        curly_term_parser,
         parse_term,
         location_factory_context,
         identifier_parser,
@@ -22,6 +24,7 @@ from .idloc import (
 from .formatter import (
         CSVFormatter,
         JSONFormatter,
+        GeneralFormatter,
         )
 from .utils import raise_again
 
@@ -34,6 +37,8 @@ csv_format_parser = term_parser + ZeroOrMore(comma + term_parser) + StringEnd()
 json_assignement_parser = Group(identifier_parser + equal + term_parser)
 
 json_format_parser = json_assignement_parser + ZeroOrMore(comma + json_assignement_parser) + StringEnd()
+
+general_format_parser = ZeroOrMore(SkipTo(curly_term_parser).leaveWhitespace() + curly_term_parser) + SkipTo(StringEnd()).leaveWhitespace() + StringEnd()
 
 
 def parse_csv_formatter(value, anchors_factory, header=None):
@@ -54,6 +59,15 @@ def parse_json_formatter(value, anchors_factory, **kwoptions):
         terms = map(lambda pterm: make_term(pterm, anchors_factory, required_out_type='string'), [x[1] for x in result])
 
         return (JSONFormatter(keys, **kwoptions), terms)
+
+
+def parse_general_formatter(value, **kwoptions):
+    with location_factory_context(LocationFactory('general_format')):
+        result = list(general_format_parser.parseString(value))
+
+        terms = map(lambda pterm: make_term(pterm, required_out_type='string'), result[1::2])
+
+        return (GeneralFormatter(result[0::2]), terms)
 
 
 anchor_re = re.compile('^(?P<name>[_A-Za-z][_A-Za-z0-9]*)\s*=(?P<term_spec>.*)$')
