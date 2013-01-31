@@ -98,6 +98,7 @@ scenarios = [
                 ([1, 2, 3, 4], ('0',), 1),
                 ],
             'execution_failure_cases': [
+                ([1, 2, 3], ('one',), Exception),
                 ([1, 2], ('2',), IndexError),
                 ([], ('0',), IndexError),
                 ([], ('-1',), IndexError),
