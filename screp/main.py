@@ -100,7 +100,7 @@ def get_formatter(anchors_factory):
         elif options.json is not None:
             return parse_json_formatter(options.json, indent=options.json_indent)
         elif options.general_format is not None:
-            return parse_general_formatter(options.general_format)
+            return parse_general_formatter(options.general_format, options.escaped)
 
         raise ValueError('No format defined!')
     except Exception as e:
@@ -249,6 +249,8 @@ def parse_cli_options(argv):
             help="don't use proxy, even if environment variables are set")
     parser.add_option('-f', '--format', dest='general_format', action='store',
             default=None, help='print record as custom format')
+    parser.add_option('-S', '--not-escaped', dest='escaped', action='store_false', default=True,
+            help="don't unescape the general format")
 #   parser.add_option('-U', '--base-url', dest='base_url', action='store',
 #           default=None, help='base url to use when computing absolute urls')
 
