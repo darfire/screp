@@ -93,18 +93,18 @@ scenarios = [
             # nth
             'names': ('nth', 'n'),
             'success_cases': [
-                ([1, 2, 3], (1,), 2),
-                ([1, 2, 3, 4], (-1,), 4),
-                ([1, 2, 3, 4], (0,), 1),
+                ([1, 2, 3], ('1',), 2),
+                ([1, 2, 3, 4], ('-1',), 4),
+                ([1, 2, 3, 4], ('0',), 1),
                 ],
             'execution_failure_cases': [
-                ([1, 2], (2,), IndexError),
-                ([], (0,), IndexError),
-                ([], (-1,), IndexError),
-                ([1, 2, 3], (-4,), IndexError),
-                (12, (0,), TypeError),
+                ([1, 2], ('2',), IndexError),
+                ([], ('0',), IndexError),
+                ([], ('-1',), IndexError),
+                ([1, 2, 3], ('-4',), IndexError),
+                (12, ('0',), TypeError),
                 ([1, 2, 3], (), TypeError),
-                ([1, 2, 3], (1, 2), TypeError),
+                ([1, 2, 3], ('1', '2'), TypeError),
                 ],
             'creation_failure_cases': []
             },

@@ -298,7 +298,7 @@ actions = [
         (('text',),                 make_generic_action(lambda e: e.text, 'element', 'string')),
         (('tag',),                  make_generic_action(lambda e: e.tag, 'element', 'string')),
         (('attr', 'a'),             make_generic_action(lambda e, a: get_attr(e, a), 'element', 'string')),
-        (('nth', 'n'),              make_generic_action(lambda s, i: s[i], 'element_set', 'element')),
+        (('nth', 'n'),              make_generic_action(lambda s, i: s[int(i)], 'element_set', 'element')),
         (('desc', 'd'),             make_selector_action(lambda e, sel: sel(e), 'element', 'element_set')),
         (('fdesc', 'fd'),           make_selector_action(lambda e, sel: sel(e)[0], 'element', 'element')),
         (('ancestors', 'ancs'),     make_x_selector_action(lambda e, sel: sel(e), 'ancestor::', 'element', 'element_set')),
