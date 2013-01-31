@@ -81,6 +81,10 @@ def report_error(e):
     print >>sys.stderr, "ERROR: %s" % (e,)
 
 
+def report_warning(e):
+    print >>sys.stderr, "WARNING: %s" % (e,)
+
+
 def print_record(string):
     sys.stdout.write(string)
 
@@ -123,22 +127,27 @@ def parse_xml_data(data):
         raise_again('Parsing document: %s' % (e,))
 
 
+def handle_value_exception(e):
+    if options.stop_on_error:
+        raise
+    elif options.show_warnings:
+        report_warning(e)
+
+
 def compute_value(substitor, context):
     try:
         return substitor.execute(context)
     except Exception as e:
-        if options.stop_on_error:
-            raise
-        else:
-            return options.null_value
+        handle_value_exception(e)
+
+        return options.null_value
 
 
 def compute_anchor(anchor, context):
     try:
         return anchor.execute(context)
     except Exception as e:
-        if options.stop_on_error:
-            raise
+        handle_value_exception(e)
 
 
 def get_context(root, element, anchors):
@@ -204,14 +213,16 @@ def parse_cli_options(argv):
     parser.add_option('-n', '--null-value', dest='null_value', action='store',
             default='NULL', help='value to print when a value cannot be computed')
     parser.add_option('-e', '--stop-on-error', dest='stop_on_error', action='store_true',
-            default=False, help='stop on first error; inhibits --null-value')
+            default=False, help='stop on first error; inhibits --null-value and --warnings')
+    parser.add_option('-w', '--warnings', dest='show_warnings', action='store_true',
+            default=False, help='show warnings or execution errors')
     parser.add_option('-c', '--csv', dest='csv', action='store', default=None,
-            help='print record as csv row')
+            help='print records as csv rows')
     parser.add_option('-F', '--continue-on-file-errors', dest='continue_on_file_errors',
-            action='store_true', default=False, help='ignore errors in opening and reading data sources')
+            action='store_true', default=False, help='ignore errors in reading and parsing data sources')
     parser.add_option('-a', '--anchor', dest='anchors', action='append', default=[],
             help='define secondary anchor, relative to the primary anchors, using the format <name>=<term>')
-    parser.add_option('-H', '--csv-header', dest='csv_header', action='store',
+    parser.add_option('--csv-header', dest='csv_header', action='store',
            default=None, help='print csv header')
     parser.add_option('-d', '--debug', dest='debug', action='store_true', default=False,
             help='print debugging information on errors; implies -e')
@@ -219,7 +230,7 @@ def parse_cli_options(argv):
             help='user agent to use when retrieving URLs')
     parser.add_option('-j', '--json', dest='json', action='store',
             default=None, help='print record as json object')
-    parser.add_option('-I', '--indent-json', dest='json_indent', action='store_true', default=False,
+    parser.add_option('--indent-json', dest='json_indent', action='store_true', default=False,
             help='indent json objects')
     parser.add_option('--no-proxy', dest='use_proxy', action='store_false', default=True,
             help="don't use proxy, even if environment variables are set")
