@@ -7,7 +7,6 @@ from lxml.cssselect import (
         )
 import re
 
-from .context import XMLContext
 from .utils import raise_again
 
 
@@ -111,16 +110,17 @@ class SiblingSelector(object):
 
 class AnchorTermAction(BaseTermAction):
     in_type = 'context'
-    out_type = 'element'
+    # out_type is set at instantiation, since it can vary
 
-    def __init__(self, anchor, identification=None):
+    def __init__(self, anchor, out_type, identification=None):
         self._anchor = anchor
         self._id = identification
+        self.out_type = out_type
 
 
-    def execute(self, value):
+    def execute(self, context):
         # value must be a context
-        return value.get_anchor(self._anchor)
+        return context.get_anchor(self._anchor)
 
 
 class RegexTermAction(BaseTermAction):
@@ -234,6 +234,11 @@ class Anchor(object):
         return self.term.execute(context)
 
 
+    @property
+    def out_type(self):
+        return self.term.out_type
+
+
 def make_action_of_class(cls, f, in_type, out_type):
     def builder(identification, args):
         return cls(f, in_type=in_type, out_type=out_type, identification=identification, args=args)
@@ -335,15 +340,15 @@ def make_action(parsed_action):
         raise Exception("Unknown action '%s'!" % (parsed_action.identification,))
 
 
-def make_term(pterm, required_out_type=None):
-    actions = [AnchorTermAction(pterm.anchor.name, pterm.anchor.identification)] + map(lambda ta: make_action(ta), pterm.accessors + pterm.filters)
+def make_term(pterm, anchors_factory, required_out_type=None):
+    actions = [anchors_factory.make_anchor_action(pterm.anchor.name, pterm.anchor.identification)] + map(lambda ta: make_action(ta), pterm.accessors + pterm.filters)
     if required_out_type is not None:
         if len(actions) == 0 or actions[-1].out_type != required_out_type:
             raise ValueError("Term must have out_type '%s', has '%s'!" % (required_out_type, actions[-1].out_type))
     return Term(actions)
 
 
-def make_anchor(name, pterm):
-    term = make_term(pterm, required_out_type='element')
+def make_anchor(name, pterm, anchors_factory):
+    term = make_term(pterm, anchors_factory)
 
     return Anchor(name, term)

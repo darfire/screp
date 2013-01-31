@@ -240,7 +240,7 @@ class TestAnchorTermAction(object):
     @staticmethod
     def make_anchor_term_action(key):
         import screp.actions as module
-        return module.AnchorTermAction(key)
+        return module.AnchorTermAction(key, 'out_type')
 
 
     def test_get_anchor(self):
