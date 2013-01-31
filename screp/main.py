@@ -16,6 +16,7 @@ from .context import (
         )
 from .utils import raise_again
 
+
 class BaseDataSource(object):
     name = 'Unknown'
 
@@ -34,18 +35,35 @@ class OpenedFileDataSource(object):
 
 
 class URLDataSource(object):
-    def __init__(self, url, user_agent=None):
+    def __init__(self, url, user_agent=None, proxy=True):
         self._url = url
         self.name = url
         self._user_agent = user_agent
-        
+        self._proxy = proxy
 
-    def read_data(self):
+
+    def _make_request(self):
         request = urllib2.Request(self._url)
         if self._user_agent is not None:
             request.add_header('User-Agent', self._user_agent)
 
-        return urllib2.urlopen(request).read()
+        return request
+
+
+    def _setup_urllib(self):
+        if self._proxy:
+            proxy_opener = urllib2.ProxyHandler()
+        else:
+            proxy_opener = urllib2.ProxyHandler({})
+        urllib2.install_opener(urllib2.build_opener(proxy_opener))
+        
+
+    def read_data(self):
+        self._setup_urllib()
+        request = self._make_request()
+        data = urllib2.urlopen(request).read()
+
+        return data
 
 
 class FileDataSource(object):
@@ -159,9 +177,7 @@ def screp_all(formatter, terms, anchors, selector, sources):
 
 
 def make_url_data_source(source):
-    global options
-    
-    return URLDataSource(source, user_agent=options.user_agent)
+    return URLDataSource(source, user_agent=options.user_agent, proxy=options.use_proxy)
 
 
 def make_data_source(source):
@@ -205,6 +221,8 @@ def parse_cli_options(argv):
             default=None, help='print record as json object')
     parser.add_option('-I', '--indent-json', dest='json_indent', action='store_true', default=False,
             help='indent json objects')
+    parser.add_option('--no-proxy', dest='use_proxy', action='store_false', default=True,
+            help="don't use proxy, even if environment variables are set")
 #   parser.add_option('-f', '--format', dest='format', action='store',
 #           default=None, help='print record as custom format')
 #   parser.add_option('-U', '--base-url', dest='base_url', action='store',
