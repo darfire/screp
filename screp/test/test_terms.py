@@ -240,7 +240,7 @@ class TestAnchorTermAction(object):
     @staticmethod
     def make_anchor_term_action(key):
         import screp.actions as module
-        return module.AnchorTermAction(key)
+        return module.AnchorTermAction(key, 'out_type')
 
 
     def test_get_anchor(self):
@@ -345,6 +345,12 @@ class Test_make_term(object):
             ])
 
 
+    @staticmethod
+    def make_anchors_factory(primary_anchors):
+        import screp.context as context
+        return context.AnchorContextFactory(primary_anchors)
+
+
     def make_context(self):
         def ctx_f(anchor):
             assert anchor == '$'
@@ -365,7 +371,7 @@ class Test_make_term(object):
                 [term_parser.ParsedTermAction('a2', 1, [])],
                 )
 
-        term = module.make_term(pterm)
+        term = module.make_term(pterm, Test_make_term.make_anchors_factory([('$', 't1')]))
 
         assert term.execute(self.make_context()) == 'value3'
 
@@ -383,7 +389,7 @@ class Test_make_term(object):
                 [],
                 )
 
-        term = module.make_term(pterm)
+        term = module.make_term(pterm, Test_make_term.make_anchors_factory([('$', 't1')]))
 
         assert term.execute(self.make_context()) == 'value1'
 
@@ -400,7 +406,7 @@ class Test_make_term(object):
                 [term_parser.ParsedTermAction('a2', 1, [])],
                 )
 
-        term = module.make_term(pterm, required_out_type='t2')
+        term = module.make_term(pterm, Test_make_term.make_anchors_factory([('$', 't1')]))
 
         assert term.execute(self.make_context()) == 'value3'
 
@@ -418,7 +424,10 @@ class Test_make_term(object):
                 )
 
         with pytest.raises(Exception):
-            term = module.make_term(pterm, required_out_type='t3')
+            term = module.make_term(
+                    pterm,
+                    Test_make_term.make_anchors_factory([('$', 't1')]),
+                    required_out_type='t3')
 
 
 class Test_make_anchor(object):
@@ -440,16 +449,16 @@ class Test_make_anchor(object):
 
             return 'result'
 
-        def mock_make_term(pterm, required_out_type=None):
+        def mock_make_term(pterm, anchors_factory, required_out_type=None):
             assert pterm == 'pterm'
 
-            assert required_out_type == 'element'
+            assert anchors_factory == 'bogus_anchor_factory'
 
             return Test_make_anchor.make_mock_term(f, ot='element')
 
         monkeypatch.setattr(module, 'make_term', mock_make_term)
 
-        anchor = module.make_anchor('anchor_name', 'pterm')
+        anchor = module.make_anchor('anchor_name', 'pterm', 'bogus_anchor_factory')
 
         assert anchor.name == 'anchor_name'
         assert anchor.term.out_type == 'element'

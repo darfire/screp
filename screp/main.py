@@ -12,7 +12,7 @@ from .format_parsers import (
         parse_anchor,
         )
 from .context import (
-        XMLContext,
+        AnchorContextFactory,
         )
 from .utils import raise_again
 
@@ -89,15 +89,15 @@ def print_record(string):
     sys.stdout.write(string)
 
 
-def get_formatter():
+def get_formatter(anchors_factory):
     try:
         if [options.csv, options.json].count(None) > 1:
             raise ValueError("Only one of (--csv, --json) may be specified!")
 
         if options.csv is not None:
-            return parse_csv_formatter(options.csv, header=options.csv_header)
+            return parse_csv_formatter(options.csv, anchors_factory, header=options.csv_header)
         elif options.json is not None:
-            return parse_json_formatter(options.json, indent=options.json_indent)
+            return parse_json_formatter(options.json, anchors_factory, indent=options.json_indent)
 
         raise ValueError('No format defined!')
     except Exception as e:
@@ -111,11 +111,21 @@ def get_selector(selector):
         raise_again('Parsing selector: %s' % (e,))
 
 
-def get_anchor(string):
+def get_anchor(string, anchors_factory):
     try:
-        return parse_anchor(string)
+        return parse_anchor(string, anchors_factory)
     except Exception as e:
         raise_again('Parsing anchor: %s' % (e,))
+
+
+def make_anchors_factory(strings):
+    factory = AnchorContextFactory((('$', 'element'), ('@', 'element')))
+
+    for s in strings:
+        a = get_anchor(s, factory)
+        factory.add_anchor(a)
+
+    return factory
 
 
 def parse_xml_data(data):
@@ -160,7 +170,7 @@ def get_context(root, element, anchors):
     return context
 
 
-def screp_source(formatter, terms, anchors, selector, source):
+def screp_source(formatter, terms, anchors_factory, selector, source):
     try:
         data = source.read_data()
         dom = parse_xml_data(data)
@@ -171,16 +181,16 @@ def screp_source(formatter, terms, anchors, selector, source):
             raise
 
     for e in selector(dom):
-        context = get_context(dom, e, anchors)
+        context = anchors_factory.make_context({'$': e, '@': dom})
 
         print_record(formatter.format_record(map(lambda t: compute_value(t, context), terms)))
 
 
-def screp_all(formatter, terms, anchors, selector, sources):
+def screp_all(formatter, terms, anchors_factory, selector, sources):
     print_record(formatter.start_format())
 
     for source in sources:
-        screp_source(formatter, terms, anchors, selector, source)
+        screp_source(formatter, terms, anchors_factory, selector, source)
 
     print_record(formatter.end_format())
 
@@ -260,13 +270,13 @@ def main():
 
         sources = make_data_sources(sources_raw)
 
-        (formatter, terms) = get_formatter()
+        anchors_factory = make_anchors_factory(options.anchors)
 
-        anchors = map(get_anchor, options.anchors)
+        (formatter, terms) = get_formatter(anchors_factory)
 
         selector = get_selector(selector)
 
-        screp_all(formatter, terms, anchors, selector, sources)
+        screp_all(formatter, terms, anchors_factory, selector, sources)
 
     except Exception as e:
         if options.debug:
