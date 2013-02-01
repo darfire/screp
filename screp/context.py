@@ -5,6 +5,7 @@ from .actions import (
         AnchorTermAction,
         )
 
+
 def make_id_anchor(name, out_type):
     return Anchor(name, Term([AnchorTermAction(name, out_type)]))
 
