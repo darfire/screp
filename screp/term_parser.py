@@ -5,11 +5,12 @@ from pyparsing import (
         Keyword,
         Forward,
         NoMatch,
-        OneOrMore,
         ZeroOrMore,
         QuotedString,
         Group,
         Combine,
+        nestedExpr,
+        ungroup,
         )
 
 from .actions import (
@@ -142,7 +143,7 @@ term_parser = anchor_parser + Group(ZeroOrMore(accessor_parser)) + Group(ZeroOrM
 
 term_parser.setParseAction(lambda s, l, t: set_parser_results(t, ParsedTerm(t[0], tuple(t[1]), tuple(t[2]))))
 
-curly_term_parser = Literal('{').suppress() + term_parser + Literal('}').suppress()
+curly_term_parser = ungroup(nestedExpr('{', '}', content=term_parser))
 
 
 def parse_term(string):

@@ -9,6 +9,7 @@ import urlparse
 from .format_parsers import (
         parse_csv_formatter,
         parse_json_formatter,
+        parse_general_formatter,
         parse_anchor,
         )
 from .context import (
@@ -91,13 +92,15 @@ def print_record(string):
 
 def get_formatter(anchors_factory):
     try:
-        if [options.csv, options.json].count(None) > 1:
-            raise ValueError("Only one of (--csv, --json) may be specified!")
+        if [options.csv, options.json, options.general_format].count(None) != 2:
+            raise ValueError("Only one of (--csv, --json, --format) may be specified!")
 
         if options.csv is not None:
             return parse_csv_formatter(options.csv, anchors_factory, header=options.csv_header)
         elif options.json is not None:
-            return parse_json_formatter(options.json, anchors_factory, indent=options.json_indent)
+            return parse_json_formatter(options.json, indent=options.json_indent)
+        elif options.general_format is not None:
+            return parse_general_formatter(options.general_format, options.escaped)
 
         raise ValueError('No format defined!')
     except Exception as e:
@@ -244,8 +247,10 @@ def parse_cli_options(argv):
             help='indent json objects')
     parser.add_option('--no-proxy', dest='use_proxy', action='store_false', default=True,
             help="don't use proxy, even if environment variables are set")
-#   parser.add_option('-f', '--format', dest='format', action='store',
-#           default=None, help='print record as custom format')
+    parser.add_option('-f', '--format', dest='general_format', action='store',
+            default=None, help='print record as custom format')
+    parser.add_option('-S', '--not-escaped', dest='escaped', action='store_false', default=True,
+            help="don't unescape the general format")
 #   parser.add_option('-U', '--base-url', dest='base_url', action='store',
 #           default=None, help='base url to use when computing absolute urls')
 
