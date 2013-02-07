@@ -660,6 +660,55 @@ class TestGeneralFormatParser(object):
                     [],
                     ),
                 ),
+            ('',
+                ([''],
+                    [],
+                    ),
+                ),
+            ('$.a1 | f1} x y z {anchor. a2(1, 2) | f1 | f2} some tail',
+                (['$.a1 | f1} x y z ', ' some tail'],
+                    [
+                        (
+                            'anchor',
+                            [
+                                ('a2', ('1', '2')),
+                                ],
+                            [
+                                ('f1', ()),
+                                ('f2', ()),
+                                ],
+                            ),
+                        ],
+                    ),
+                ),
+            ('{anchor.a1} inter  1 {anchor.a2("}") | f2} {missing_curly.a1 | f1',
+                (['', ' inter  1 ', ' {missing_curly.a1 | f1'],
+                    [
+                        ('anchor',
+                            [
+                                ('a1', ()),
+                                ],
+                            [],
+                            ),
+                        ('anchor',
+                            [
+                                ('a2', ('}',)),
+                                ],
+                            [
+                                ('f2', ()),
+                                ],
+                            ),
+                        ],
+                    ),
+                ),
+            ('1\n2 {anchor1} 3 \t 4 {anchor2} \n\n\n',
+                (['1\n2 ', ' 3 \t 4 ', ' \n\n\n'],
+                    [
+                        ('anchor1', [], []),
+                        ('anchor2', [], []),
+                        ],
+                    ),
+                ),
             ]
 
     non_matches = []
@@ -667,6 +716,8 @@ class TestGeneralFormatParser(object):
     @pytest.mark.parametrize(('string', 'match'), matches)
     def test_matches(self, string, match):
         import screp.format_parsers as format_parsers
+
+        format_parsers.general_format_parser.parseWithTabs()
 
         ret = format_parsers.general_format_parser.parseString(string)
 
