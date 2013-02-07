@@ -628,3 +628,53 @@ class TestJSONFormatParser(object):
         import pyparsing
         with pytest.raises(pyparsing.ParseException):
             ret = module.json_format_parser.parseString(string)
+
+
+# general_format_parser tests
+class TestGeneralFormatParser(object):
+    matches = [
+            ('{$.a1(1, 2).a2 | f1 | f2("123") } inter1 { anchor} tail',
+                (['', ' inter1 ', ' tail'],
+                    [
+                        (# anchor, accessors, filters
+                            '$',
+                            [
+                                ('a1', ('1', '2')),
+                                ('a2', ()),
+                                ],
+                            [
+                                ('f1', ()),
+                                ('f2', ('123',)),
+                                    ],
+                            ),
+                        (
+                            'anchor',
+                            [],
+                            [],
+                            ),
+                        ],
+                    ),
+                ),
+            ('123 no terms',
+                (['123 no terms'],
+                    [],
+                    ),
+                ),
+            ]
+
+    non_matches = []
+
+    @pytest.mark.parametrize(('string', 'match'), matches)
+    def test_matches(self, string, match):
+        import screp.format_parsers as format_parsers
+
+        ret = format_parsers.general_format_parser.parseString(string)
+
+        (interstrings, terms) = match
+
+        assert len(ret) % 2 == 1
+
+        assert interstrings == ret[0::2]
+
+        for (t, m) in zip(ret[1::2], terms):
+            TestTermParser.check_term(t, *m)
