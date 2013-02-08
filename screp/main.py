@@ -98,9 +98,9 @@ def get_formatter(anchors_factory):
         if options.csv is not None:
             return parse_csv_formatter(options.csv, anchors_factory, header=options.csv_header)
         elif options.json is not None:
-            return parse_json_formatter(options.json, indent=options.json_indent)
+            return parse_json_formatter(options.json, anchors_factory, indent=options.json_indent)
         elif options.general_format is not None:
-            return parse_general_formatter(options.general_format, options.escaped)
+            return parse_general_formatter(options.general_format, anchors_factory, options.escaped)
 
         raise ValueError('No format defined!')
     except Exception as e:

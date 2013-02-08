@@ -61,11 +61,11 @@ def parse_json_formatter(value, anchors_factory, **kwoptions):
         return (JSONFormatter(keys, **kwoptions), terms)
 
 
-def parse_general_formatter(value, escaped):
+def parse_general_formatter(value, anchors_factory, escaped):
     with location_factory_context(LocationFactory('general_format')):
         result = list(general_format_parser.parseString(value))
 
-        terms = map(lambda pterm: make_term(pterm, required_out_type='string'), result[1::2])
+        terms = map(lambda pterm: make_term(pterm, anchors_factory, required_out_type='string'), result[1::2])
 
         if escaped:
             inter_strings = map(lambda x: x.decode('string_escape'), result[0::2])
