@@ -6,7 +6,11 @@ screp, easy command-line scrapping
 What is screp?
 ==============
 
-**screp** is a command line utility that provides easy and flexible scrapping of HTML documents.
+**screp** is a command line utility that provides easy and flexible scrapping of HTML documents. It
+works by finding a set of *anchors* (specified using a CSS selector) and then extracting information
+relative to those anchors, optionally post processing it using a set of standard operations. For each
+anchor it outputs a record formatted according to one of the supported formats (CSV, JSON or
+general).
 
 
 Invoking screp
@@ -14,20 +18,24 @@ Invoking screp
 
 **screp** is invoked using the following syntax:
 
-$ screp [OPTION] FORMAT_SPEC PRIMARY_SELECTOR [FILE]
+$ screp [OPTION] FORMAT_SPEC PRIMARY_SELECTOR [FILES]
 
 where:
 * FORMAT_SPEC is a format specification, one of:
-  - *-c CSV_FORMAT_SPEC*, as detailed below
+  - *-c CSV_FORMAT_SPEC*, formats each record as a comma-separated-values row
+  - *-j JSON_FORMAT_SPEC*, formats each record as a JSON object and the whole output as a list of
+    JSON objects
+  - *-f GENERAL_FORMAT_SPEC*, formats each record according to a general format where computed
+    values are substituted to their specifications (similar to bash parameter substitution)
 * PRIMARY_SELECTOR is a CSS selector that specifies the *primary anchor*, as detailed below
-* FILE can be either a local file or an absolute URL; if not FILEs are specified the standard input
+* FILE can be either a local file or an absolute URL; if no FILEs are specified the standard input
   is read
 
 
 How does screp work?
 ====================
 
-screp tries to automate many of the steps taken when writing your own scrapper, steps like:
+**screp** tries to automate many of the steps taken when writing your own scrapper, steps like:
 
 * fetching the HTML documents, if necessary
 * parsing HTML
@@ -44,7 +52,11 @@ To use screp, you need to take a series of steps:
   records of interest in the HTML documents
 * specify the output format; this implies specifying:
   - *terms*, which are string computed relative to the anchors
-  - how these terms are combined to produce a record; currently screp only supports CSV formatting
+  - how these terms are combined to produce a record; currently screp supports three methods of
+    specifying formats:
+      - CSV
+      - JSON
+      - general format
 * optionally, you can also define *secondary anchors*, which are elements computed relative to the
   *primary anchor* that can be used to define *terms* in a more succinct way
 
@@ -61,7 +73,7 @@ followed by zero or more filters.
 value of the last function (or the anchor, if this is the first action) and output another value. In
 other words, they form a pipeline.  Accessors act on DOM elements and sets (actually ordered lists)
 of elements, whereas filters act on strings. Each action has an in_type and an out_type. For a term
-to be correctly defined the out_type of an action needs to be equal to the in_type of the following
+to be correctly defined the out_type of an action needs to match the in_type of the following
 action.
 
 The supported types are: 'string', 'element', 'element_set'.
@@ -131,20 +143,44 @@ The following filters are predefined:
   at the beginning and end of the string
 * **replace(old, new)** [in_type='string', out_type='string']: replaces all occurrences of 'old' with
   'new'
+* **resub(pattern, repl)** [in_type='string', out_type='string']: performs a regular expression
+  substitution; *pattern* and *repl* are have the formats taken by the **re.sub** Python function
+  from the standard Python library;
 
 Specifying output formats
 =========================
 
-Currently the only output format defined is comma-separated-value
-
-Specifying CSV format
----------------------
+CSV format
+----------
 
 The CSV output format is specified using the -c option. Optionally, using the -H option you can
 specify a CSV header to output before outputting records.
 
 Example::
     -c '$.attr(title), $.parent.desc(".price").text | trim' -H 'name, price'
+
+
+JSON format
+-----------
+
+The JSON output format is defined using the -j option. It formats the output as a JSON list of
+objects, one for each record. The *--indent-json* flat tells screp to indent each object. The format
+is specified as a comma-separated list of *key=value* pairs, where the *key* represents the JSON key
+in the record object while *value* is a term specification.
+
+Example::
+  - j 'text=$.text, ptext=$.parent.text | upper, gptext=$.parent.parent.text'
+
+
+General format
+--------------
+
+Then general format is specified by a general string containing term specifications. To distinguish
+it from the general format, each term specification is surrounded by braces. When formatting a
+record each term specification is substituted with the computed value for that term.
+
+Example::
+  -f 'some header {$.parent.text | replace("X", "Y")} some middle {$.tag} some tail'
 
 
 Specifying secondary anchors
