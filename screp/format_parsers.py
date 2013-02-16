@@ -14,10 +14,8 @@ from .term_parser import (
         location_factory_context,
         identifier_parser,
         )
-from .actions import (
-        make_term,
-        make_anchor,
-        )
+from .term import make_term
+from .anchor import make_anchor
 from .idloc import (
         LocationFactory,
         )

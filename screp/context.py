@@ -1,9 +1,6 @@
-from .actions import (
-        AnchorTermAction,
-        Anchor,
-        Term,
-        AnchorTermAction,
-        )
+from .termactions import  AnchorTermAction
+from .term import Term
+from .anchor import Anchor
 
 
 def make_id_anchor(name, out_type):

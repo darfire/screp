@@ -5,7 +5,7 @@ class TestTermAction(object):
 
     @staticmethod
     def make_action(f, in_type=None, out_type=None):
-        import screp.actions as module
+        import screp.termactions as module
 
         it = in_type
         ot = out_type
@@ -94,7 +94,7 @@ class TestTermAction(object):
 class TestTerm(object):
     @staticmethod
     def make_term(actions):
-        import screp.actions as module
+        import screp.term as module
         return module.Term(actions)
 
 
@@ -239,7 +239,7 @@ class TestAnchorTermAction(object):
 
     @staticmethod
     def make_anchor_term_action(key):
-        import screp.actions as module
+        import screp.termactions as module
         return module.AnchorTermAction(key, 'out_type')
 
 
@@ -274,13 +274,13 @@ class Test_make_action(object):
 
     @staticmethod
     def setup_actions_dir(monkeypatch, mock_actions):
-        import screp.actions as module
+        import screp.actiondir as module
 
         monkeypatch.setattr(module, 'actions_dir', dict(module.multiply_keys(mock_actions)))
 
 
     def test_make_action(self, monkeypatch):
-        import screp.actions as module
+        import screp.actiondir as module
         from screp.term_parser import ParsedTermAction
         from screp.idloc import (
                 Identification,
@@ -315,7 +315,7 @@ class Test_make_action(object):
 
 
     def test_make_action_not_found(self, monkeypatch):
-        import screp.actions as module
+        import screp.actiondir as module
         from screp.term_parser import ParsedTermAction
 
         Test_make_action.setup_actions_dir(monkeypatch, [
@@ -329,8 +329,6 @@ class Test_make_action(object):
 class Test_make_term(object):
 
     def setup_actions_dir(self, monkeypatch):
-        import screp.actions as module
-        import screp.term_parser as term_parser
         def f1(value):
             assert value == 'value1'
             return 'value2'
@@ -360,7 +358,7 @@ class Test_make_term(object):
 
 
     def test_make_term(self, monkeypatch):
-        import screp.actions as module
+        import screp.term as term_module
         import screp.term_parser as term_parser
 
         self.setup_actions_dir(monkeypatch)
@@ -371,13 +369,13 @@ class Test_make_term(object):
                 [term_parser.ParsedTermAction('a2', 1, [])],
                 )
 
-        term = module.make_term(pterm, Test_make_term.make_anchors_factory([('$', 't1')]))
+        term = term_module.make_term(pterm, Test_make_term.make_anchors_factory([('$', 't1')]))
 
         assert term.execute(self.make_context()) == 'value3'
 
 
     def test_make_term_no_actions(self, monkeypatch):
-        import screp.actions as module
+        import screp.term as term_module
         import screp.term_parser as term_parser
         def ctx_f(anchor):
             assert anchor == '$'
@@ -389,13 +387,13 @@ class Test_make_term(object):
                 [],
                 )
 
-        term = module.make_term(pterm, Test_make_term.make_anchors_factory([('$', 't1')]))
+        term = term_module.make_term(pterm, Test_make_term.make_anchors_factory([('$', 't1')]))
 
         assert term.execute(self.make_context()) == 'value1'
 
 
     def test_make_term_required_out_type(self, monkeypatch):
-        import screp.actions as module
+        import screp.term as term_module
         import screp.term_parser as term_parser
 
         self.setup_actions_dir(monkeypatch)
@@ -406,13 +404,13 @@ class Test_make_term(object):
                 [term_parser.ParsedTermAction('a2', 1, [])],
                 )
 
-        term = module.make_term(pterm, Test_make_term.make_anchors_factory([('$', 't1')]))
+        term = term_module.make_term(pterm, Test_make_term.make_anchors_factory([('$', 't1')]))
 
         assert term.execute(self.make_context()) == 'value3'
 
 
     def test_make_term_required_out_type_fails(self, monkeypatch):
-        import screp.actions as module
+        import screp.term as module
         import screp.term_parser as term_parser
 
         self.setup_actions_dir(monkeypatch)
@@ -442,7 +440,8 @@ class Test_make_anchor(object):
 
 
     def test_make_anchor(self, monkeypatch):
-        import screp.actions as module
+        import screp.term as term_module
+        import screp.anchor as anchor_module
 
         def f(value):
             assert value == 'value'
@@ -456,9 +455,9 @@ class Test_make_anchor(object):
 
             return Test_make_anchor.make_mock_term(f, ot='element')
 
-        monkeypatch.setattr(module, 'make_term', mock_make_term)
+        monkeypatch.setattr(term_module, 'make_term', mock_make_term)
 
-        anchor = module.make_anchor('anchor_name', 'pterm', 'bogus_anchor_factory')
+        anchor = anchor_module.make_anchor('anchor_name', 'pterm', 'bogus_anchor_factory')
 
         assert anchor.name == 'anchor_name'
         assert anchor.term.out_type == 'element'
