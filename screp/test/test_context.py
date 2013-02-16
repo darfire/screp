@@ -45,9 +45,11 @@ class TestAnchorContextFactory(object):
 
 
     def make_identity_anchor(self, name, out_type):
-        import screp.actions as actions
+        import screp.anchor as anchor_module
+        import screp.term as term_module
+        import screp.termactions as termactions_module
 
-        return actions.Anchor(name, actions.Term([actions.AnchorTermAction(name, out_type)]))
+        return anchor_module.Anchor(name, term_module.Term([termactions_module.AnchorTermAction(name, out_type)]))
 
 
     def test_get_anchor(self):
@@ -88,9 +90,9 @@ class TestAnchorContextFactory(object):
 
 
     def test_make_context(self):
-        from screp.actions import (
-                Anchor,
-                Term,
+        from screp.anchor import Anchor
+        from screp.term import Term
+        from screp.termactions import (
                 AnchorTermAction,
                 GenericTermAction,
                 )
@@ -123,9 +125,9 @@ class TestAnchorContextFactory(object):
 
 
     def test_make_context_primary_anchor_missing(self):
-        from screp.actions import (
-                Anchor,
-                Term,
+        from screp.anchor import Anchor
+        from screp.term import Term
+        from screp.termactions import (
                 AnchorTermAction,
                 GenericTermAction,
                 )
@@ -142,9 +144,9 @@ class TestAnchorContextFactory(object):
 
 
     def test_make_identity_anchor_action(self):
-        from screp.actions import (
-                Anchor,
-                Term,
+        from screp.anchor import Anchor
+        from screp.term import Term
+        from screp.termactions import (
                 AnchorTermAction,
                 GenericTermAction,
                 )
