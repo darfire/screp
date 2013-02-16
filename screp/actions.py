@@ -1,6 +1,9 @@
 import types
 import lxml
-from lxml.etree import XPath
+from lxml.etree import (
+        XPath,
+        tostring,
+        )
 from lxml.cssselect import (
         CSSSelector,
         css_to_xpath,
@@ -312,6 +315,7 @@ actions = [
         (('psiblings', 'psibs'),    make_x_selector_action(lambda e, sel: sel(e), 'preceding-sibling::', 'element', 'element_set')),
         (('siblings', 'sibs'),      make_custom_selector_action(lambda e, sel: sel(e), SiblingSelector, 'element', 'element_set')),
         (('matching', 'm'),         make_x_selector_action(match_selector, 'self::', 'element_set', 'element_set')),
+        (('tostring', 'string'),    make_generic_action(lambda e: tostring(e), 'element', 'string')),
 
 
         # functions/filters

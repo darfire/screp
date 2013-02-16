@@ -133,7 +133,7 @@ def make_anchors_factory(strings):
 
 def parse_xml_data(data):
     try:
-        parser = etree.HTMLParser()
+        parser = etree.HTMLParser(remove_blank_text=True)
 
         return etree.fromstring(data, parser)
     except Exception as e:
