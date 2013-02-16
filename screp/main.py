@@ -3,78 +3,23 @@ from optparse import OptionParser
 import lxml.etree as etree
 import lxml.html as html
 from lxml.cssselect import CSSSelector
-import urllib2
 import urlparse
 
 from .format_parsers import (
         parse_csv_formatter,
         parse_json_formatter,
+        parse_general_formatter,
         parse_anchor,
         )
 from .context import (
-        XMLContext,
+        AnchorContextFactory,
         )
 from .utils import raise_again
-
-
-class BaseDataSource(object):
-    name = 'Unknown'
-
-    def read_data(self):
-        pass
-
-
-class OpenedFileDataSource(object):
-    def __init__(self, name, ofile):
-        self._file = ofile
-        self.name = name
-
-
-    def read_data(self):
-        return self._file.read()
-
-
-class URLDataSource(object):
-    def __init__(self, url, user_agent=None, proxy=True):
-        self._url = url
-        self.name = url
-        self._user_agent = user_agent
-        self._proxy = proxy
-
-
-    def _make_request(self):
-        request = urllib2.Request(self._url)
-        if self._user_agent is not None:
-            request.add_header('User-Agent', self._user_agent)
-
-        return request
-
-
-    def _setup_urllib(self):
-        if self._proxy:
-            proxy_opener = urllib2.ProxyHandler()
-        else:
-            proxy_opener = urllib2.ProxyHandler({})
-        urllib2.install_opener(urllib2.build_opener(proxy_opener))
-        
-
-    def read_data(self):
-        self._setup_urllib()
-        request = self._make_request()
-        data = urllib2.urlopen(request).read()
-
-        return data
-
-
-class FileDataSource(object):
-    def __init__(self, fname):
-        self._fname = fname
-        self.name = fname
-
-
-    def read_data(self):
-        with open(self._fname, 'r') as f:
-            return f.read()
+from .source import (
+        URLDataSource,
+        OpenedFileDataSource,
+        FileDataSource,
+        )
 
 
 def report_error(e):
@@ -89,15 +34,17 @@ def print_record(string):
     sys.stdout.write(string)
 
 
-def get_formatter():
+def get_formatter(anchors_factory):
     try:
-        if [options.csv, options.json].count(None) > 1:
-            raise ValueError("Only one of (--csv, --json) may be specified!")
+        if [options.csv, options.json, options.general_format].count(None) != 2:
+            raise ValueError("Only one of (--csv, --json, --format) may be specified!")
 
         if options.csv is not None:
-            return parse_csv_formatter(options.csv, header=options.csv_header)
+            return parse_csv_formatter(options.csv, anchors_factory, header=options.csv_header)
         elif options.json is not None:
-            return parse_json_formatter(options.json, indent=options.json_indent)
+            return parse_json_formatter(options.json, anchors_factory, indent=options.json_indent)
+        elif options.general_format is not None:
+            return parse_general_formatter(options.general_format, anchors_factory, options.escaped)
 
         raise ValueError('No format defined!')
     except Exception as e:
@@ -111,16 +58,26 @@ def get_selector(selector):
         raise_again('Parsing selector: %s' % (e,))
 
 
-def get_anchor(string):
+def get_anchor(string, anchors_factory):
     try:
-        return parse_anchor(string)
+        return parse_anchor(string, anchors_factory)
     except Exception as e:
         raise_again('Parsing anchor: %s' % (e,))
 
 
+def make_anchors_factory(strings):
+    factory = AnchorContextFactory((('$', 'element'), ('@', 'element')))
+
+    for s in strings:
+        a = get_anchor(s, factory)
+        factory.add_anchor(a)
+
+    return factory
+
+
 def parse_xml_data(data):
     try:
-        parser = etree.HTMLParser()
+        parser = etree.HTMLParser(remove_blank_text=True)
 
         return etree.fromstring(data, parser)
     except Exception as e:
@@ -160,7 +117,7 @@ def get_context(root, element, anchors):
     return context
 
 
-def screp_source(formatter, terms, anchors, selector, source):
+def screp_source(formatter, terms, anchors_factory, selector, source):
     try:
         data = source.read_data()
         dom = parse_xml_data(data)
@@ -171,16 +128,16 @@ def screp_source(formatter, terms, anchors, selector, source):
             raise
 
     for e in selector(dom):
-        context = get_context(dom, e, anchors)
+        context = anchors_factory.make_context({'$': e, '@': dom})
 
         print_record(formatter.format_record(map(lambda t: compute_value(t, context), terms)))
 
 
-def screp_all(formatter, terms, anchors, selector, sources):
+def screp_all(formatter, terms, anchors_factory, selector, sources):
     print_record(formatter.start_format())
 
     for source in sources:
-        screp_source(formatter, terms, anchors, selector, source)
+        screp_source(formatter, terms, anchors_factory, selector, source)
 
     print_record(formatter.end_format())
 
@@ -234,8 +191,10 @@ def parse_cli_options(argv):
             help='indent json objects')
     parser.add_option('--no-proxy', dest='use_proxy', action='store_false', default=True,
             help="don't use proxy, even if environment variables are set")
-#   parser.add_option('-f', '--format', dest='format', action='store',
-#           default=None, help='print record as custom format')
+    parser.add_option('-f', '--format', dest='general_format', action='store',
+            default=None, help='print record as custom format')
+    parser.add_option('-S', '--not-escaped', dest='escaped', action='store_false', default=True,
+            help="don't unescape the general format")
 #   parser.add_option('-U', '--base-url', dest='base_url', action='store',
 #           default=None, help='base url to use when computing absolute urls')
 
@@ -260,13 +219,13 @@ def main():
 
         sources = make_data_sources(sources_raw)
 
-        (formatter, terms) = get_formatter()
+        anchors_factory = make_anchors_factory(options.anchors)
 
-        anchors = map(get_anchor, options.anchors)
+        (formatter, terms) = get_formatter(anchors_factory)
 
         selector = get_selector(selector)
 
-        screp_all(formatter, terms, anchors, selector, sources)
+        screp_all(formatter, terms, anchors_factory, selector, sources)
 
     except Exception as e:
         if options.debug:

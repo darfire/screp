@@ -669,12 +669,12 @@ def pytest_generate_tests(metafunc):
 
 
 def test_action_success(name, args, in_value, out_value):
-    import screp.actions as actions
+    import screp.actiondir as actiondir
     import screp.term_parser as parsers
 
     parsed_action = parsers.ParsedTermAction(name, 0, args=args)
 
-    action = actions.make_action(parsed_action)
+    action = actiondir.make_action(parsed_action)
 
     if callable(out_value):
         assert out_value(action.execute(in_value))
@@ -683,23 +683,23 @@ def test_action_success(name, args, in_value, out_value):
 
 
 def test_action_execution_failure(name, args, in_value, exception_class):
-    import screp.actions as actions
+    import screp.actiondir as actiondir
     import screp.term_parser as parsers
 
     parsed_action = parsers.ParsedTermAction(name, 0, args=args)
 
-    action = actions.make_action(parsed_action)
+    action = actiondir.make_action(parsed_action)
 
     with pytest.raises(exception_class):
         action.execute(in_value)
 
 
 def test_action_creation_failure(name, args, exception_class):
-    import screp.actions as actions
+    import screp.actiondir as actiondir
     import screp.term_parser as parsers
 
     parsed_action = parsers.ParsedTermAction(name, 0, args=args)
 
     with pytest.raises(exception_class):
-        action = actions.make_action(parsed_action)
+        action = actiondir.make_action(parsed_action)
 

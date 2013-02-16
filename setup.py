@@ -10,11 +10,16 @@ from setuptools import setup
 
 
 PROJECT = u'screp'
-VERSION = '0.2'
-URL = ''
+VERSION = '0.3'
+URL = 'https://github.com/darfire/screp'
 AUTHOR = u'Doru Arfire'
 AUTHOR_EMAIL = u'doruarfire@gmail.com'
-DESC = "A short description..."
+DESC = u'Command-line utility for easy scraping of HTML documents'
+
+requires = [
+        'pyparsing',
+        'lxml',
+        ]
 
 def read_file(file_name):
     file_path = os.path.join(
@@ -34,12 +39,9 @@ setup(
     license=read_file('LICENSE'),
     namespace_packages=[],
     packages=[u'screp'],
-#    package_dir = {'': os.path.dirname(__file__)},
     include_package_data=True,
     zip_safe=False,
-    install_requires=[
-        # -*- Requirements -*-
-    ],
+    install_requires=requires,
     entry_points = {
         'console_scripts': [
             'screp=screp.main:main',
@@ -52,5 +54,10 @@ setup(
         'License :: OSI Approved',
         'License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)',
         "Programming Language :: Python",
+        'Intended Audience :: Developers',
+        'Intended Audience :: System Administrators',
+        'Development Status :: Beta',
+        'Environment :: Console',
+        'Topic :: HTML scraping',
     ],
 )
