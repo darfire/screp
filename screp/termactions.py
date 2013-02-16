@@ -54,56 +54,15 @@ class GenericTermAction(BaseTermAction):
             raise_again('%s: %s' % (self._id, e))
 
 
-class SelectorTermAction(GenericTermAction):
-    def __init__(self, f, in_type=None, out_type=None, identification=None, args=None):
-        super(SelectorTermAction, self).__init__(f, in_type=in_type, out_type=out_type, identification=identification, args=args)
+class GenericSelectorTermAction(GenericTermAction):
+    def __init__(self, f, selector, in_type=None, out_type=None, identification=None, args=None):
+        super(GenericSelectorTermAction, self).__init__(f, in_type=in_type, out_type=out_type, identification=identification, args=args)
 
-        self._selector = CSSSelector(self._args[0])
-
-        del self._args[0]
+        self._selector = selector
 
 
     def sub_execute(self, value):
         return self._f(value, self._selector, *self._args)
-
-
-class AxisSelectorTermAction(GenericTermAction):
-    def __init__(self, f, axis, in_type=None, out_type=None, identification=None, args=None):
-        super(AxisSelectorTermAction, self).__init__(f, in_type=in_type, out_type=out_type, identification=identification, args=args)
-
-        self._selector = XPath(css_to_xpath(self._args[0], prefix=axis))
-
-        del self._args[0]
-
-
-    def sub_execute(self, value):
-        return self._f(value, self._selector, *self._args)
-
-
-class CustomSelectorTermAction(GenericTermAction):
-    in_type = 'element'
-    out_type = 'element_set'
-
-    def __init__(self, f, selector_class, in_type=None, out_type=None, identification=None, args=None):
-        super(CustomSelectorTermAction, self).__init__(f, in_type=in_type, out_type=out_type, identification=identification, args=args)
-
-        self._selector = selector_class(self._args[0])
-
-        del self._args[0]
-
-
-    def sub_execute(self, value):
-        return self._f(value, self._selector, *self._args)
-
-
-class SiblingSelector(object):
-    def __init__(self, selector):
-        self._preceding_sel = XPath(css_to_xpath(selector, prefix="preceding-sibling::"))
-        self._following_sel = XPath(css_to_xpath(selector, prefix="following-sibling::"))
-
-
-    def __call__(self, element):
-        return self._preceding_sel(element) + self._following_sel(element)
 
 
 class AnchorTermAction(BaseTermAction):
@@ -191,19 +150,18 @@ def make_generic_action(f, in_type, out_type):
     return make_action_of_class(GenericTermAction, f, in_type, out_type)
 
 
+def make_custom_selector_action(f, selector_ctor, in_type, out_type):
+    def builder(identification, args):
+        selector = selector_ctor(args[0])
+        args = args[1:]
+        return GenericSelectorTermAction(f, selector, in_type=in_type, out_type=out_type, identification=identification, args=args)
+
+    return builder
+
+
 def make_selector_action(f, in_type, out_type):
-    return make_action_of_class(SelectorTermAction, f, in_type, out_type)
+    return make_custom_selector_action(f, CSSSelector, in_type, out_type)
 
 
-def make_x_selector_action(f, axis, in_type, out_type):
-    def builder(identification, args):
-        return AxisSelectorTermAction(f, axis, in_type=in_type, out_type=out_type, identification=identification, args=args)
-
-    return builder
-
-
-def make_custom_selector_action(f, selector_class, in_type, out_type):
-    def builder(identification, args):
-        return CustomSelectorTermAction(f, selector_class, in_type=in_type, out_type=out_type, identification=identification, args=args)
-
-    return builder
+def make_axis_selector_action(f, axis, in_type, out_type):
+    return make_custom_selector_action(f, lambda spec: XPath(css_to_xpath(spec, prefix=axis)), in_type, out_type)

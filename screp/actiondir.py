@@ -1,11 +1,15 @@
-from lxml.etree import tostring
+from lxml.etree import (
+        XPath,
+        tostring,
+        )
+from lxml.cssselect import css_to_xpath
+
 from .termactions import (
         make_generic_action,
         make_selector_action,
-        make_x_selector_action,
+        make_axis_selector_action,
         make_custom_selector_action,
         RegexTermAction,
-        SiblingSelector,
         )
 
 
@@ -34,6 +38,16 @@ def regex_action_builder(identification, args):
     return RegexTermAction(args, identification=identification)
 
 
+class SiblingSelector(object):
+    def __init__(self, selector):
+        self._preceding_sel = XPath(css_to_xpath(selector, prefix="preceding-sibling::"))
+        self._following_sel = XPath(css_to_xpath(selector, prefix="following-sibling::"))
+
+
+    def __call__(self, element):
+        return self._preceding_sel(element) + self._following_sel(element)
+
+
 actions = [
         # accessors
         (('first', 'f'),            make_generic_action(lambda s: s[0], 'element_set', 'element')),
@@ -47,12 +61,12 @@ actions = [
         (('nth', 'n'),              make_generic_action(lambda s, i: s[int(i)], 'element_set', 'element')),
         (('desc', 'd'),             make_selector_action(lambda e, sel: sel(e), 'element', 'element_set')),
         (('fdesc', 'fd'),           make_selector_action(lambda e, sel: sel(e)[0], 'element', 'element')),
-        (('ancestors', 'ancs'),     make_x_selector_action(lambda e, sel: sel(e), 'ancestor::', 'element', 'element_set')),
-        (('children', 'kids'),      make_x_selector_action(lambda e, sel: sel(e), 'child::', 'element', 'element_set')),
-        (('fsiblings', 'fsibs'),    make_x_selector_action(lambda e, sel: sel(e), 'following-sibling::', 'element', 'element_set')),
-        (('psiblings', 'psibs'),    make_x_selector_action(lambda e, sel: sel(e), 'preceding-sibling::', 'element', 'element_set')),
+        (('ancestors', 'ancs'),     make_axis_selector_action(lambda e, sel: sel(e), 'ancestor::', 'element', 'element_set')),
+        (('children', 'kids'),      make_axis_selector_action(lambda e, sel: sel(e), 'child::', 'element', 'element_set')),
+        (('fsiblings', 'fsibs'),    make_axis_selector_action(lambda e, sel: sel(e), 'following-sibling::', 'element', 'element_set')),
+        (('psiblings', 'psibs'),    make_axis_selector_action(lambda e, sel: sel(e), 'preceding-sibling::', 'element', 'element_set')),
         (('siblings', 'sibs'),      make_custom_selector_action(lambda e, sel: sel(e), SiblingSelector, 'element', 'element_set')),
-        (('matching', 'm'),         make_x_selector_action(match_selector, 'self::', 'element_set', 'element_set')),
+        (('matching', 'm'),         make_axis_selector_action(match_selector, 'self::', 'element_set', 'element_set')),
         (('tostring', 'string'),    make_generic_action(lambda e: tostring(e), 'element', 'string')),
 
 
