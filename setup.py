@@ -46,18 +46,16 @@ setup(
         'console_scripts': [
             'screp=screp.main:main',
             ],
-        # -*- Entry points -*-
     },
     classifiers=[
-    	# see http://pypi.python.org/pypi?:action=list_classifiers
         # -*- Classifiers -*- 
         'License :: OSI Approved',
         'License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)',
         "Programming Language :: Python",
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
-        'Development Status :: Beta',
+        'Development Status :: 4 - Beta',
         'Environment :: Console',
-        'Topic :: HTML scraping',
+        'Topic :: Internet :: WWW/HTTP',
     ],
 )
