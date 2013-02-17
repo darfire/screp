@@ -10,7 +10,7 @@ from setuptools import setup
 
 
 PROJECT = u'screp'
-VERSION = '0.3.1'
+VERSION = '0.3.2'
 URL = 'https://github.com/darfire/screp'
 AUTHOR = u'Doru Arfire'
 AUTHOR_EMAIL = u'doruarfire@gmail.com'
@@ -19,6 +19,7 @@ DESC = u'Command-line utility for easy scraping of HTML documents'
 requires = [
         'pyparsing',
         'lxml',
+        'cssselect >= 0.7.1',
         ]
 
 def read_file(file_name):

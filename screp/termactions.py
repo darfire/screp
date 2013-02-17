@@ -2,13 +2,14 @@ import lxml
 from lxml.etree import (
         XPath,
         )
-from lxml.cssselect import (
-        CSSSelector,
-        css_to_xpath,
-        )
+from lxml.cssselect import CSSSelector
 import re
 
-from .utils import raise_again
+from .utils import (
+        raise_again,
+        generic_translator,
+        preprocess_selector,
+        )
 
 
 class BaseTermAction(object):
@@ -152,7 +153,7 @@ def make_generic_action(f, in_type, out_type):
 
 def make_custom_selector_action(f, selector_ctor, in_type, out_type):
     def builder(identification, args):
-        selector = selector_ctor(args[0])
+        selector = selector_ctor(preprocess_selector(args[0]))
         args = args[1:]
         return GenericSelectorTermAction(f, selector, in_type=in_type, out_type=out_type, identification=identification, args=args)
 
@@ -164,4 +165,4 @@ def make_selector_action(f, in_type, out_type):
 
 
 def make_axis_selector_action(f, axis, in_type, out_type):
-    return make_custom_selector_action(f, lambda spec: XPath(css_to_xpath(spec, prefix=axis)), in_type, out_type)
+    return make_custom_selector_action(f, lambda spec: XPath(generic_translator.css_to_xpath(spec, prefix=axis)), in_type, out_type)
