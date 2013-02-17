@@ -10,7 +10,7 @@ from setuptools import setup
 
 
 PROJECT = u'screp'
-VERSION = '0.3'
+VERSION = '0.3.1'
 URL = 'https://github.com/darfire/screp'
 AUTHOR = u'Doru Arfire'
 AUTHOR_EMAIL = u'doruarfire@gmail.com'
@@ -36,9 +36,9 @@ setup(
     author=AUTHOR,
     author_email=AUTHOR_EMAIL,
     url=URL,
-    license=read_file('LICENSE'),
+    license='LGPL',
     namespace_packages=[],
-    packages=[u'screp'],
+    packages=['screp'],
     include_package_data=True,
     zip_safe=False,
     install_requires=requires,
@@ -57,5 +57,5 @@ setup(
         'Development Status :: 4 - Beta',
         'Environment :: Console',
         'Topic :: Internet :: WWW/HTTP',
-    ],
-)
+        ],
+    )
