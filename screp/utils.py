@@ -1,5 +1,7 @@
 import sys
 
+from cssselect import GenericTranslator
+
 
 def raise_again(s):
     """
@@ -8,3 +10,14 @@ def raise_again(s):
     (t, v, tb) = sys.exc_info()
     assert t is not None
     raise t(s), None, tb
+
+
+def preprocess_selector(selector):
+    # no selector means universal selector
+    if selector == '':
+        return '*'
+    else:
+        return selector
+
+
+generic_translator = GenericTranslator()

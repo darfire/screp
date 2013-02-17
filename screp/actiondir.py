@@ -2,7 +2,6 @@ from lxml.etree import (
         XPath,
         tostring,
         )
-from lxml.cssselect import css_to_xpath
 
 from .termactions import (
         make_generic_action,
@@ -10,6 +9,10 @@ from .termactions import (
         make_axis_selector_action,
         make_custom_selector_action,
         RegexTermAction,
+        )
+from .utils import (
+        generic_translator,
+        preprocess_selector,
         )
 
 
@@ -40,8 +43,8 @@ def regex_action_builder(identification, args):
 
 class SiblingSelector(object):
     def __init__(self, selector):
-        self._preceding_sel = XPath(css_to_xpath(selector, prefix="preceding-sibling::"))
-        self._following_sel = XPath(css_to_xpath(selector, prefix="following-sibling::"))
+        self._preceding_sel = XPath(generic_translator.css_to_xpath(preprocess_selector(selector), prefix="preceding-sibling::"))
+        self._following_sel = XPath(generic_translator.css_to_xpath(preprocess_selector(selector), prefix="following-sibling::"))
 
 
     def __call__(self, element):

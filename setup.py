@@ -10,7 +10,7 @@ from setuptools import setup
 
 
 PROJECT = u'screp'
-VERSION = '0.3'
+VERSION = '0.3.2'
 URL = 'https://github.com/darfire/screp'
 AUTHOR = u'Doru Arfire'
 AUTHOR_EMAIL = u'doruarfire@gmail.com'
@@ -19,6 +19,7 @@ DESC = u'Command-line utility for easy scraping of HTML documents'
 requires = [
         'pyparsing',
         'lxml',
+        'cssselect >= 0.7.1',
         ]
 
 def read_file(file_name):
@@ -36,9 +37,9 @@ setup(
     author=AUTHOR,
     author_email=AUTHOR_EMAIL,
     url=URL,
-    license=read_file('LICENSE'),
+    license='LGPL',
     namespace_packages=[],
-    packages=[u'screp'],
+    packages=['screp'],
     include_package_data=True,
     zip_safe=False,
     install_requires=requires,
@@ -46,18 +47,16 @@ setup(
         'console_scripts': [
             'screp=screp.main:main',
             ],
-        # -*- Entry points -*-
     },
     classifiers=[
-    	# see http://pypi.python.org/pypi?:action=list_classifiers
         # -*- Classifiers -*- 
         'License :: OSI Approved',
         'License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)',
         "Programming Language :: Python",
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
-        'Development Status :: Beta',
+        'Development Status :: 4 - Beta',
         'Environment :: Console',
-        'Topic :: HTML scraping',
-    ],
-)
+        'Topic :: Internet :: WWW/HTTP',
+        ],
+    )
